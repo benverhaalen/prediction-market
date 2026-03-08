@@ -1,0 +1,175 @@
+import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getPrices } from "@/lib/lmsr";
+import { toNumber, formatDollars } from "@/lib/utils";
+import { AdminBetConfirm } from "@/components/AdminBetConfirm";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboard() {
+  if (!(await isAdmin())) {
+    redirect("/admin/login");
+  }
+
+  const [pendingRequests, activeMarkets, resolvedMarkets] = await Promise.all([
+    prisma.betRequest.findMany({
+      where: { status: "PENDING" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        market: { select: { question: true } },
+        outcome: { select: { label: true } },
+      },
+    }),
+    prisma.market.findMany({
+      where: { status: { in: ["OPEN", "CLOSED"] } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        outcomes: true,
+        _count: { select: { bets: true } },
+        bets: { select: { cost: true } },
+      },
+    }),
+    prisma.market.findMany({
+      where: { status: "RESOLVED" },
+      orderBy: { resolvedAt: "desc" },
+      take: 10,
+      include: {
+        outcomes: true,
+        _count: { select: { bets: true } },
+        bets: { select: { cost: true } },
+      },
+    }),
+  ]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
+          <h1 className="font-display text-2xl font-bold">ADMIN</h1>
+          <div className="flex gap-3">
+            <Link
+              href="/admin/markets/new"
+              className="min-h-[44px] flex items-center rounded-lg bg-gold px-3 text-sm font-semibold text-black cursor-pointer hover:bg-gold/90 transition-colors"
+            >
+              + Market
+            </Link>
+            <Link
+              href="/admin/settings"
+              className="min-h-[44px] flex items-center rounded-lg bg-surface-2 border border-border px-3 text-sm text-muted cursor-pointer hover:text-foreground transition-colors"
+            >
+              Settings
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-lg px-4 py-4 space-y-6">
+        {/* Pending Bet Requests */}
+        <section>
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted mb-3">
+            Pending Requests ({pendingRequests.length})
+          </h2>
+          {pendingRequests.length === 0 ? (
+            <div className="rounded-xl border border-border bg-surface p-4 text-center text-sm text-muted">
+              No pending requests
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pendingRequests.map((req) => (
+                <AdminBetConfirm
+                  key={req.id}
+                  request={{
+                    id: req.id,
+                    userName: req.userName,
+                    marketQuestion: req.market.question,
+                    outcomeLabel: req.outcome.label,
+                    amount: toNumber(req.amount),
+                    createdAt: req.createdAt.toISOString(),
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Active Markets */}
+        <section>
+          <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted mb-3">
+            Active Markets ({activeMarkets.length})
+          </h2>
+          <div className="space-y-2">
+            {activeMarkets.map((m) => {
+              const shares = m.outcomes.map((o) => o.shares);
+              const prices = getPrices({ shares, b: m.bParam });
+              const vol = m.bets.reduce((sum, b) => sum + toNumber(b.cost), 0);
+
+              return (
+                <Link
+                  key={m.id}
+                  href={`/admin/markets/${m.id}`}
+                  className="block rounded-xl border border-border bg-surface p-3 cursor-pointer hover:bg-surface-2 transition-colors"
+                >
+                  <div className="font-medium text-sm mb-1 line-clamp-1">
+                    {m.question}
+                  </div>
+                  <div className="flex gap-3 text-xs text-muted">
+                    {m.outcomes.map((o, i) => (
+                      <span key={o.id}>
+                        {o.label}: {Math.round(prices[i] * 100)}%
+                      </span>
+                    ))}
+                    <span className="ml-auto">
+                      {formatDollars(vol)} | {m._count.bets} bets
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Resolved Markets */}
+        {resolvedMarkets.length > 0 && (
+          <section>
+            <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-muted mb-3">
+              Resolved ({resolvedMarkets.length})
+            </h2>
+            <div className="space-y-2">
+              {resolvedMarkets.map((m) => {
+                const vol = m.bets.reduce((sum, b) => sum + toNumber(b.cost), 0);
+                const winner = m.outcomes.find((o) => o.id === m.resolution);
+                return (
+                  <Link
+                    key={m.id}
+                    href={`/admin/markets/${m.id}`}
+                    className="block rounded-xl border border-border bg-surface p-3 cursor-pointer hover:bg-surface-2 transition-colors"
+                  >
+                    <div className="font-medium text-sm mb-1 line-clamp-1">
+                      {m.question}
+                    </div>
+                    <div className="flex gap-3 text-xs text-muted">
+                      <span className="text-green">
+                        Result: {winner?.label ?? "N/A"}
+                      </span>
+                      <span className="ml-auto">
+                        {formatDollars(vol)} | {m._count.bets} bets
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <div className="pb-4">
+          <Link href="/" className="text-xs text-muted hover:text-foreground">
+            ← Public site
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+}

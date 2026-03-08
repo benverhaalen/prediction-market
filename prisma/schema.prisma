@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bets        Bet[]
+  betRequests BetRequest[]
+}
+
+model Market {
+  id                 String       @id @default(cuid())
+  question           String
+  description        String?
+  status             MarketStatus @default(OPEN)
+  resolution         String?
+  bParam             Float        @default(100)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  closesAt           DateTime
+  resolvedAt         DateTime?
+  lastNotifiedPrices Json?
+
+  outcomes    Outcome[]
+  bets        Bet[]
+  betRequests BetRequest[]
+
+  @@index([status, closesAt])
+}
+
+model Outcome {
+  id       String @id @default(cuid())
+  marketId String
+  market   Market @relation(fields: [marketId], references: [id])
+  label    String
+  shares   Float  @default(0)
+
+  bets           Bet[]
+  betRequests    BetRequest[]
+  priceSnapshots PriceSnapshot[]
+
+  @@index([marketId])
+}
+
+model Bet {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  marketId   String
+  market     Market   @relation(fields: [marketId], references: [id])
+  outcomeId  String
+  outcome    Outcome  @relation(fields: [outcomeId], references: [id])
+  shares     Float
+  cost       Decimal  @db.Decimal(19, 4)
+  priceAtBet Float
+  createdAt  DateTime @default(now())
+
+  grossPayout Decimal? @db.Decimal(19, 4)
+  rakePaid    Decimal? @db.Decimal(19, 4)
+  netPayout   Decimal? @db.Decimal(19, 4)
+
+  betRequest BetRequest?
+
+  @@index([marketId])
+  @@index([userId])
+  @@index([outcomeId])
+}
+
+model BetRequest {
+  id          String        @id @default(cuid())
+  userName    String
+  marketId    String
+  market      Market        @relation(fields: [marketId], references: [id])
+  outcomeId   String
+  outcome     Outcome       @relation(fields: [outcomeId], references: [id])
+  amount      Decimal       @db.Decimal(19, 4)
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  confirmedAt DateTime?
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+  betId       String?       @unique
+  bet         Bet?          @relation(fields: [betId], references: [id])
+
+  @@index([status])
+  @@index([marketId])
+}
+
+model PriceSnapshot {
+  id        String   @id @default(cuid())
+  marketId  String
+  outcomeId String
+  outcome   Outcome  @relation(fields: [outcomeId], references: [id])
+  price     Float
+  timestamp DateTime @default(now())
+
+  @@index([marketId, outcomeId, timestamp])
+}
+
+model HouseLedger {
+  id          String     @id @default(cuid())
+  marketId    String?
+  betId       String?
+  type        LedgerType
+  amount      Decimal    @db.Decimal(19, 4)
+  description String?
+  createdAt   DateTime   @default(now())
+
+  @@index([marketId, type])
+}
+
+model Settings {
+  id            String  @id @default("global")
+  defaultBParam Float   @default(100)
+  rakePercent   Float   @default(0.05)
+  groupmeBotId  String?
+  groupmeToken  String?
+  adminPassword String  @default("changeme")
+  houseBankroll Decimal @default(200) @db.Decimal(19, 4)
+  venmoHandle   String  @default("@admin")
+}
+
+enum MarketStatus {
+  OPEN
+  CLOSED
+  RESOLVED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXPIRED
+}
+
+enum LedgerType {
+  TRADE_REVENUE
+  RAKE
+  PAYOUT
+  SUBSIDY_LOSS
+  MANUAL_DEPOSIT
+  REFUND
+}
