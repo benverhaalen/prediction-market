@@ -174,14 +174,20 @@ export function formatResolution(
   winnerLabel: string,
   winnerCount: number,
   totalPool: number,
+  totalRake: number,
   url: string,
 ): string {
+  const poolLine =
+    totalRake > 0
+      ? `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Pool: $${totalPool.toFixed(2)} | House: $${totalRake.toFixed(2)} 💸`
+      : `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Pool: $${totalPool.toFixed(2)} 💸`;
+
   return [
     `🏆 RESOLVED: "${question}"`,
     "",
     `Result: ${winnerLabel}`,
     "",
-    `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Pool: $${totalPool.toFixed(2)} 💸`,
+    poolLine,
     "",
     `See results 👉 ${url}`,
   ].join("\n");

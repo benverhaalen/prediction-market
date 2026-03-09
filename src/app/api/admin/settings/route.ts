@@ -17,6 +17,7 @@ export async function GET() {
 
   return NextResponse.json({
     defaultBParam: settings.defaultBParam,
+    rakePercent: settings.rakePercent,
     groupmeBotId: settings.groupmeBotId,
     adminGroupmeBotId: settings.adminGroupmeBotId,
     adminGroupmeGroupId: settings.adminGroupmeGroupId,
@@ -35,6 +36,7 @@ export async function PATCH(request: NextRequest) {
 
   if (body.defaultBParam !== undefined)
     updateData.defaultBParam = body.defaultBParam;
+  if (body.rakePercent !== undefined) updateData.rakePercent = body.rakePercent;
   if (body.groupmeBotId !== undefined)
     updateData.groupmeBotId = body.groupmeBotId;
   if (body.groupmeToken !== undefined)
@@ -57,6 +59,7 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({
     defaultBParam: settings.defaultBParam,
+    rakePercent: settings.rakePercent,
     groupmeBotId: settings.groupmeBotId,
     adminGroupmeBotId: settings.adminGroupmeBotId,
     adminGroupmeGroupId: settings.adminGroupmeGroupId,

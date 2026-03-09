@@ -55,9 +55,11 @@ export default async function AdminMarketPage({
       venmoUsername: b.betRequest?.venmoUsername ?? "",
       shares: b.shares,
       grossPayout: toNumber(b.grossPayout ?? 0),
+      rakePaid: toNumber(b.rakePaid ?? 0),
       netPayout: toNumber(b.netPayout ?? 0),
       isWinner: b.outcomeId === market.resolution,
     }));
+    const totalRake = payouts.reduce((sum, p) => sum + p.rakePaid, 0);
     const winnerOutcome = market.outcomes.find(
       (o) => o.id === market.resolution,
     );
@@ -65,6 +67,7 @@ export default async function AdminMarketPage({
     payoutData = {
       payouts,
       totalPool: totalVolume,
+      totalRake,
       winnerLabel: winnerOutcome?.label ?? "N/A",
       isCancelled,
     };

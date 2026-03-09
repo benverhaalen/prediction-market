@@ -41,11 +41,13 @@ export async function GET(
     shares: b.shares,
     cost: toNumber(b.cost),
     grossPayout: toNumber(b.grossPayout ?? 0),
+    rakePaid: toNumber(b.rakePaid ?? 0),
     netPayout: toNumber(b.netPayout ?? 0),
     isWinner: b.outcomeId === market.resolution,
   }));
 
   const totalPool = roundCents(payouts.reduce((sum, p) => sum + p.cost, 0));
+  const totalRake = roundCents(payouts.reduce((sum, p) => sum + p.rakePaid, 0));
 
   return NextResponse.json({
     market: {
@@ -55,5 +57,6 @@ export async function GET(
     },
     payouts,
     totalPool,
+    totalRake,
   });
 }

@@ -55,7 +55,13 @@ export async function POST(
     return NextResponse.json({ error: "Invalid outcome" }, { status: 400 });
   }
 
-  // Compute payouts (parimutuel: winners split the pool)
+  // Fetch rake setting
+  const settings = await prisma.settings.findUnique({
+    where: { id: "global" },
+  });
+  const rakePercent = settings?.rakePercent ?? 0.05;
+
+  // Compute payouts (parimutuel: house takes rake off top, winners split rest)
   const betsForPayout = market.bets.map((b) => ({
     id: b.id,
     userId: b.userId,
@@ -66,7 +72,7 @@ export async function POST(
     cost: toNumber(b.cost),
   }));
 
-  const payouts = computePayouts(betsForPayout, winningOutcomeId);
+  const payouts = computePayouts(betsForPayout, winningOutcomeId, rakePercent);
 
   // Execute in transaction
   await prisma.$transaction(async (tx) => {
@@ -86,7 +92,7 @@ export async function POST(
         where: { id: payout.betId },
         data: {
           grossPayout: new Prisma.Decimal(payout.grossPayout.toFixed(4)),
-          rakePaid: new Prisma.Decimal("0"),
+          rakePaid: new Prisma.Decimal(payout.rake.toFixed(4)),
           netPayout: new Prisma.Decimal(payout.netPayout.toFixed(4)),
         },
       });
@@ -101,6 +107,7 @@ export async function POST(
 
   // GroupMe notification
   const totalPool = payouts.reduce((sum, p) => sum + p.cost, 0);
+  const totalRake = payouts.reduce((sum, p) => sum + p.rake, 0);
   const baseUrl = getBaseUrl();
 
   const winnerCount = payouts.filter(
@@ -112,6 +119,7 @@ export async function POST(
       winningOutcome.label,
       winnerCount,
       totalPool,
+      totalRake,
       `${baseUrl}/market/${id}`,
     ),
   );
@@ -120,5 +128,6 @@ export async function POST(
     success: true,
     payouts,
     totalPool,
+    totalRake,
   });
 }

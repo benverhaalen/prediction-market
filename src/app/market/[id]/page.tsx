@@ -194,6 +194,7 @@ export default async function MarketPage({
               label: o.label,
             }))}
             totalPool={totalVolume}
+            rakePercent={settings?.rakePercent ?? 0.05}
           />
         )}
 

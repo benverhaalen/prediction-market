@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getPrices, previewTrade } from "@/lib/lmsr";
+import { getPrices, previewTrade, roundCents } from "@/lib/lmsr";
 import { toNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +55,11 @@ export async function GET(
     if (outcomeId && amount > 0) {
       const outcomeIndex = market.outcomes.findIndex((o) => o.id === outcomeId);
       if (outcomeIndex !== -1) {
+        const settings = await prisma.settings.findUnique({
+          where: { id: "global" },
+        });
+        const rakePercent = settings?.rakePercent ?? 0.05;
+
         const existingOutcomeShares = market.outcomes[outcomeIndex].shares;
         const preview = previewTrade(
           { shares, b: market.bParam },
@@ -63,20 +68,39 @@ export async function GET(
           totalVolume,
           existingOutcomeShares,
         );
-        // Count unique bettors on this outcome
+
+        // Apply rake to preview (off the top of pool)
+        const poolAfterBet = totalVolume + amount;
+        const rakeAmount = roundCents(poolAfterBet * rakePercent);
+        const distributablePool = poolAfterBet - rakeAmount;
+        const totalWinningShares = existingOutcomeShares + preview.shares;
+        let adjustedPayout =
+          totalWinningShares > 0
+            ? roundCents(
+                (preview.shares / totalWinningShares) * distributablePool,
+              )
+            : 0;
+
+        // Safety: if rake would make this bettor lose money, show no-rake payout
+        if (adjustedPayout < amount) {
+          adjustedPayout = preview.estimatedPayout;
+        }
+
         const outcomeBettors = new Set(
           market.bets
             .filter((b) => b.outcomeId === outcomeId)
             .map((b) => b.userId),
         ).size;
-        const poolAfterBet = totalVolume + amount;
-        const poolShare =
-          poolAfterBet > 0 ? preview.estimatedPayout / poolAfterBet : 0;
+        const poolShare = poolAfterBet > 0 ? adjustedPayout / poolAfterBet : 0;
+
         result.preview = {
           ...preview,
+          estimatedPayout: adjustedPayout,
+          multiplier: adjustedPayout / amount,
           outcomeBettors,
           poolAfterBet,
           poolShare,
+          rakePercent,
         };
       }
     }

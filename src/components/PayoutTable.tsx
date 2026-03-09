@@ -8,6 +8,7 @@ interface PayoutEntry {
   venmoUsername: string;
   shares: number;
   grossPayout: number;
+  rakePaid: number;
   netPayout: number;
   isWinner: boolean;
 }
@@ -15,6 +16,7 @@ interface PayoutEntry {
 interface PayoutTableProps {
   payouts: PayoutEntry[];
   totalPool: number;
+  totalRake: number;
   winnerLabel: string;
   isCancelled?: boolean;
 }
@@ -22,6 +24,7 @@ interface PayoutTableProps {
 export function PayoutTable({
   payouts,
   totalPool,
+  totalRake,
   winnerLabel,
   isCancelled = false,
 }: PayoutTableProps) {
@@ -158,6 +161,11 @@ export function PayoutTable({
             <div className="mt-1.5 flex gap-3 text-xs text-muted pl-9">
               <span>{w.shares.toFixed(1)} shares</span>
               <span>Gross {formatDollars(w.grossPayout)}</span>
+              {w.rakePaid > 0 && (
+                <span className="text-gold">
+                  Rake -{formatDollars(w.rakePaid)}
+                </span>
+              )}
             </div>
           </div>
         ))}
@@ -179,11 +187,21 @@ export function PayoutTable({
       )}
 
       {/* Summary */}
-      <div className="mt-4 text-sm text-muted">
-        Total Pool:{" "}
-        <span className="font-semibold text-foreground">
-          {formatDollars(totalPool)}
-        </span>
+      <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted">
+        <div>
+          Pool:{" "}
+          <span className="font-semibold text-foreground">
+            {formatDollars(totalPool)}
+          </span>
+        </div>
+        {totalRake > 0 && (
+          <div>
+            House:{" "}
+            <span className="font-semibold text-gold">
+              {formatDollars(totalRake)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

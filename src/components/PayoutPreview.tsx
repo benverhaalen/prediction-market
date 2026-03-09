@@ -19,15 +19,31 @@ interface PayoutPreviewProps {
   bets: BetEntry[];
   outcomes: OutcomeInfo[];
   totalPool: number;
+  rakePercent: number;
 }
 
-export function PayoutPreview({ bets, outcomes, totalPool }: PayoutPreviewProps) {
+function roundCents(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
+export function PayoutPreview({
+  bets,
+  outcomes,
+  totalPool,
+  rakePercent,
+}: PayoutPreviewProps) {
   if (bets.length === 0) return null;
 
-  // Group bets by user+outcome and compute payouts per outcome scenario
+  // Group bets by user+outcome
   const userBets = new Map<
     string,
-    { userName: string; outcomeId: string; outcomeLabel: string; shares: number; cost: number }
+    {
+      userName: string;
+      outcomeId: string;
+      outcomeLabel: string;
+      shares: number;
+      cost: number;
+    }
   >();
 
   for (const bet of bets) {
@@ -49,22 +65,53 @@ export function PayoutPreview({ bets, outcomes, totalPool }: PayoutPreviewProps)
       .filter((b) => b.outcomeId === outcome.id)
       .reduce((sum, b) => sum + b.shares, 0);
 
+    // Try applying rake off the top
+    const rakeAmount = roundCents(totalPool * rakePercent);
+    let distributable = totalPool - rakeAmount;
+
+    // Safety: check if any winner would lose money with rake
+    const wouldUnderpay =
+      rakeAmount > 0 &&
+      totalWinningShares > 0 &&
+      aggregated
+        .filter((b) => b.outcomeId === outcome.id)
+        .some((b) => {
+          const payout = roundCents(
+            (b.shares / totalWinningShares) * distributable,
+          );
+          return payout < roundCents(b.cost);
+        });
+
+    if (wouldUnderpay) {
+      distributable = totalPool;
+    }
+
+    const actualRake = wouldUnderpay ? 0 : rakeAmount;
+
     const winners = aggregated
       .filter((b) => b.outcomeId === outcome.id && totalWinningShares > 0)
-      .map((b) => ({
-        userName: b.userName,
-        payout: (b.shares / totalWinningShares) * totalPool,
-        cost: b.cost,
-        profit: (b.shares / totalWinningShares) * totalPool - b.cost,
-      }))
+      .map((b) => {
+        const payout = roundCents(
+          (b.shares / totalWinningShares) * distributable,
+        );
+        return {
+          userName: b.userName,
+          payout,
+          cost: b.cost,
+          profit: roundCents(payout - b.cost),
+        };
+      })
       .sort((a, b) => b.payout - a.payout);
 
     return {
       outcome,
       winners,
       totalWinningShares,
+      rake: actualRake,
     };
   });
+
+  const rakeDisplay = rakePercent > 0 ? Math.round(rakePercent * 100) : 0;
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
@@ -72,12 +119,17 @@ export function PayoutPreview({ bets, outcomes, totalPool }: PayoutPreviewProps)
         Payout Preview
       </h3>
       <p className="text-xs text-muted mb-3">
-        Pool: <span className="text-foreground font-medium">{formatDollars(totalPool)}</span>
-        {" \u2014 "}Winners split the entire pool
+        Pool:{" "}
+        <span className="text-foreground font-medium">
+          {formatDollars(totalPool)}
+        </span>
+        {rakeDisplay > 0 && (
+          <span className="text-gold"> ({rakeDisplay}% house rake)</span>
+        )}
       </p>
 
       <div className="space-y-3">
-        {scenarioPayouts.map(({ outcome, winners }) => (
+        {scenarioPayouts.map(({ outcome, winners, rake }) => (
           <div key={outcome.id} className="rounded-lg bg-surface-2 p-3">
             <div className="text-sm font-medium mb-2">
               If <span className="text-blue">{outcome.label}</span> wins:
@@ -105,6 +157,12 @@ export function PayoutPreview({ bets, outcomes, totalPool }: PayoutPreviewProps)
                     </div>
                   </div>
                 ))}
+                {rake > 0 && (
+                  <div className="flex items-center justify-between text-xs text-gold mt-1 pt-1 border-t border-border/50">
+                    <span>House rake</span>
+                    <span>{formatDollars(rake)}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>

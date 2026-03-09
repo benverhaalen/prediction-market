@@ -5,6 +5,7 @@ import Link from "next/link";
 
 interface SettingsData {
   defaultBParam: number;
+  rakePercent: number;
   groupmeBotId: string | null;
   adminGroupmeBotId: string | null;
   adminGroupmeGroupId: string | null;
@@ -50,6 +51,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           defaultBParam: settings.defaultBParam,
+          rakePercent: settings.rakePercent,
           groupmeBotId: settings.groupmeBotId,
           adminGroupmeBotId: settings.adminGroupmeBotId,
           adminGroupmeGroupId: settings.adminGroupmeGroupId,
@@ -97,6 +99,30 @@ export default function SettingsPage() {
       <main className="mx-auto max-w-lg px-4 py-4 space-y-4">
         {/* Settings form */}
         <div className="space-y-4">
+          <div>
+            <label className="text-xs text-muted block mb-1.5">
+              House Rake (%)
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="50"
+              step="1"
+              value={Math.round(settings.rakePercent * 100)}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  rakePercent: Number(e.target.value) / 100,
+                })
+              }
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
+            />
+            <p className="text-xs text-muted mt-1">
+              Taken off the top of the pool before winners split. Set to 0 to
+              disable. Skipped if any winner would lose money.
+            </p>
+          </div>
+
           <div>
             <label className="text-xs text-muted block mb-1.5">
               Max Bet Amount ($)

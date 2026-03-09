@@ -187,7 +187,11 @@ export function previewTrade(
 
 /**
  * Compute payouts for all bets in a resolved market.
- * Parimutuel: winners split the entire pool proportional to their shares.
+ * Parimutuel: house takes rakePercent off the top of the pool,
+ * winners split the rest proportional to their shares.
+ *
+ * Safety: if rake would cause ANY winner to receive less than their
+ * original bet, rake drops to 0 for the entire market.
  */
 export function computePayouts(
   bets: Array<{
@@ -200,18 +204,42 @@ export function computePayouts(
     cost: number;
   }>,
   winningOutcomeId: string,
+  rakePercent: number = 0,
 ): PayoutResult[] {
   const pool = bets.reduce((sum, b) => sum + b.cost, 0);
   const totalWinningShares = bets
     .filter((b) => b.outcomeId === winningOutcomeId)
     .reduce((sum, b) => sum + b.shares, 0);
 
+  // Try applying rake off the top
+  let rakeAmount = roundCents(pool * rakePercent);
+  let distributable = pool - rakeAmount;
+
+  // Safety check: ensure no winner receives less than their cost
+  if (rakeAmount > 0 && totalWinningShares > 0) {
+    const anyoneUnderpaid = bets
+      .filter((b) => b.outcomeId === winningOutcomeId)
+      .some((b) => {
+        const payout = (b.shares / totalWinningShares) * distributable;
+        return roundCents(payout) < roundCents(b.cost);
+      });
+    if (anyoneUnderpaid) {
+      rakeAmount = 0;
+      distributable = pool;
+    }
+  }
+
   const results = bets.map((bet) => {
     const isWinner = bet.outcomeId === winningOutcomeId;
-    const payout =
+    const grossPayout =
       isWinner && totalWinningShares > 0
         ? (bet.shares / totalWinningShares) * pool
         : 0;
+    const netPayout =
+      isWinner && totalWinningShares > 0
+        ? (bet.shares / totalWinningShares) * distributable
+        : 0;
+    const rake = roundCents(grossPayout - netPayout);
 
     return {
       betId: bet.id,
@@ -220,25 +248,25 @@ export function computePayouts(
       outcomeLabel: bet.outcomeLabel,
       shares: bet.shares,
       cost: bet.cost,
-      grossPayout: roundCents(payout),
-      netProfit: roundCents(payout - bet.cost),
-      rake: 0,
-      netPayout: roundCents(payout),
+      grossPayout: roundCents(grossPayout),
+      netProfit: roundCents(netPayout - bet.cost),
+      rake,
+      netPayout: roundCents(netPayout),
       isWinner,
     };
   });
 
-  // Fix rounding: ensure total payouts equal pool exactly
-  const totalPaid = results
+  // Fix rounding: ensure netPayouts + totalRake = pool
+  const totalNetPaid = results
     .filter((r) => r.isWinner)
     .reduce((sum, r) => sum + r.netPayout, 0);
-  const remainder = roundCents(pool - totalPaid);
+  const totalRake = results.reduce((sum, r) => sum + r.rake, 0);
+  const remainder = roundCents(pool - totalNetPaid - totalRake);
   if (remainder !== 0) {
     const largest = results
       .filter((r) => r.isWinner)
       .sort((a, b) => b.netPayout - a.netPayout)[0];
     if (largest) {
-      largest.grossPayout = roundCents(largest.grossPayout + remainder);
       largest.netPayout = roundCents(largest.netPayout + remainder);
       largest.netProfit = roundCents(largest.netPayout - largest.cost);
     }
