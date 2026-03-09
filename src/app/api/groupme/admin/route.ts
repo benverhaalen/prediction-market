@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Unrecognized command
+  await postToAdminGroupMe(
+    `Unknown command. Available commands:\n• y <id> — confirm a bet\n• n <id> — reject a bet\n• status — list pending bets`,
+  );
   return NextResponse.json({ ok: true });
 }
 
@@ -186,7 +190,7 @@ async function handleConfirm(
 
     // Reply to admin
     await postToAdminGroupMe(
-      `Confirmed! ${result.userName}'s $${result.dollarAmount.toFixed(2)} bet on "${result.outcomeLabel}" is live. (${result.bet.shares.toFixed(1)} shares)`,
+      `✅ Confirmed! ${result.userName}'s $${result.dollarAmount.toFixed(2)} bet on "${result.outcomeLabel}" is live. (${result.bet.shares.toFixed(1)} shares)`,
     );
 
     // Post to public group chat
@@ -231,7 +235,7 @@ async function handleReject(betRequestId: string) {
     });
 
     await postToAdminGroupMe(
-      `Rejected ${betRequest.userName}'s $${toNumber(betRequest.amount).toFixed(2)} bet request.`,
+      `❌ Rejected ${betRequest.userName}'s $${toNumber(betRequest.amount).toFixed(2)} bet request.`,
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
