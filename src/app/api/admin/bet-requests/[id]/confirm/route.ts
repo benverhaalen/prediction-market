@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/auth";
-import { computeTrade, getPrices } from "@/lib/lmsr";
-import { toNumber } from "@/lib/utils";
-import {
-  postToGroupMe,
-  shouldNotifyOddsShift,
-  formatOddsShift,
-} from "@/lib/groupme";
-import { getBaseUrl } from "@/lib/utils";
+import { computeTrade } from "@/lib/lmsr";
+import { toNumber, getBaseUrl } from "@/lib/utils";
+import { postToGroupMe, formatBetConfirmed } from "@/lib/groupme";
 import { Prisma } from "@/generated/prisma";
 
 export async function POST(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,7 +34,6 @@ export async function POST(
       throw new Error("Bet request already processed");
     }
     if (betRequest.market.status !== "OPEN") {
-      // Auto-reject if market closed
       await tx.betRequest.update({
         where: { id },
         data: { status: "EXPIRED" },
@@ -60,7 +54,9 @@ export async function POST(
       orderBy: { id: "asc" },
     });
 
-    const outcomeIndex = outcomes.findIndex((o) => o.id === betRequest.outcomeId);
+    const outcomeIndex = outcomes.findIndex(
+      (o) => o.id === betRequest.outcomeId,
+    );
     if (outcomeIndex === -1) {
       throw new Error("Outcome not found");
     }
@@ -72,7 +68,7 @@ export async function POST(
     const trade = computeTrade(
       { shares, b: betRequest.market.bParam },
       outcomeIndex,
-      dollarAmount
+      dollarAmount,
     );
 
     const priceAtBet = trade.newPrices[outcomeIndex];
@@ -143,42 +139,25 @@ export async function POST(
       newPrices: trade.newPrices,
       outcomes,
       market: betRequest.market,
+      userName: betRequest.userName,
+      outcomeLabel: betRequest.outcome.label,
+      dollarAmount,
     };
   });
 
-  // After transaction: check for GroupMe notification (fire-and-forget)
-  const lastNotified = result.market.lastNotifiedPrices as Record<string, number> | null;
-  const outcomeIds = result.outcomes.map((o) => o.id);
-
-  if (shouldNotifyOddsShift(result.newPrices, lastNotified, outcomeIds)) {
-    const baseUrl = getBaseUrl();
-    const outcomesWithIds = result.outcomes.map((o) => ({
-      id: o.id,
-      label: o.label,
-    }));
-
-    postToGroupMe(
-      formatOddsShift(
-        result.market.question,
-        outcomesWithIds,
-        result.newPrices,
-        lastNotified ?? {},
-        `${baseUrl}/market/${result.market.id}`
-      )
-    );
-
-    // Update last notified prices
-    const newNotifiedPrices: Record<string, number> = {};
-    result.outcomes.forEach((o, i) => {
-      newNotifiedPrices[o.id] = result.newPrices[i];
-    });
-    prisma.market
-      .update({
-        where: { id: result.market.id },
-        data: { lastNotifiedPrices: newNotifiedPrices },
-      })
-      .catch(console.error);
-  }
+  // Post bet confirmation to public GroupMe (fire-and-forget)
+  const baseUrl = getBaseUrl();
+  postToGroupMe(
+    formatBetConfirmed(
+      result.userName,
+      result.dollarAmount,
+      result.outcomeLabel,
+      result.market.question,
+      result.outcomes.map((o) => ({ label: o.label })),
+      result.newPrices,
+      `${baseUrl}/market/${result.market.id}`,
+    ),
+  );
 
   return NextResponse.json({
     success: true,

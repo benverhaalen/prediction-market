@@ -39,6 +39,7 @@ export function BetRequestForm({
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [copied, setCopied] = useState(false);
 
   // Load saved fields from localStorage
   useEffect(() => {
@@ -115,6 +116,19 @@ export function BetRequestForm({
 
   const selectedLabel = outcomes.find((o) => o.id === selectedOutcome)?.label ?? "";
 
+  // Venmo note: keep it generic to avoid TOS issues — no gambling terms
+  const venmoNote = `${marketShortCode} - ${name.trim() || "payment"}`;
+
+  const handleCopyNote = async () => {
+    try {
+      await navigator.clipboard.writeText(venmoNote);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback: select text
+    }
+  };
+
   if (status === "success") {
     return (
       <div className="rounded-xl border border-green/30 bg-green-dim/20 p-5">
@@ -124,10 +138,27 @@ export function BetRequestForm({
         <p className="mt-3 text-sm text-foreground/80">
           Send {formatDollars(parseFloat(amount))} to{" "}
           <span className="font-semibold text-gold">{venmoHandle}</span> on Venmo
-          with note:
+          with this note:
         </p>
-        <div className="mt-2 rounded-lg bg-surface-2 p-3 text-center font-mono text-sm">
-          {marketShortCode} {selectedLabel} ${amount}
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 rounded-lg bg-surface-2 p-3 text-center font-mono text-sm">
+            {venmoNote}
+          </div>
+          <button
+            onClick={handleCopyNote}
+            type="button"
+            className="min-h-[44px] min-w-[44px] shrink-0 rounded-lg bg-surface-2 border border-border flex items-center justify-center cursor-pointer hover:bg-surface-3 transition-colors"
+          >
+            {copied ? (
+              <svg className="h-5 w-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            )}
+          </button>
         </div>
         <p className="mt-3 text-xs text-muted">
           Your bet will go live once payment is confirmed by the admin.
@@ -136,6 +167,7 @@ export function BetRequestForm({
           onClick={() => {
             setStatus("idle");
             setAmount("");
+            setCopied(false);
           }}
           className="mt-4 min-h-[44px] w-full rounded-lg border border-border bg-surface-2 text-sm font-medium text-foreground cursor-pointer hover:bg-surface-3 transition-colors"
         >

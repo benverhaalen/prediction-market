@@ -69,23 +69,49 @@ async function postWithBotId(botId: string, text: string): Promise<void> {
 
 /**
  * Check if odds shifted enough to warrant a GroupMe notification.
- * Returns true if any outcome moved >= 5pp from last notified prices.
+ * Returns true if any outcome moved >= 2pp from last notified prices.
  */
 export function shouldNotifyOddsShift(
   currentPrices: number[],
   lastNotifiedPrices: Record<string, number> | null,
   outcomeIds: string[],
 ): boolean {
-  if (!lastNotifiedPrices) return false;
+  if (!lastNotifiedPrices) return true; // first bet always notifies
 
   for (let i = 0; i < outcomeIds.length; i++) {
     const lastPrice = lastNotifiedPrices[outcomeIds[i]];
     if (lastPrice !== undefined) {
       const delta = Math.abs(currentPrices[i] - lastPrice);
-      if (delta >= 0.05) return true;
+      if (delta >= 0.02) return true;
     }
   }
   return false;
+}
+
+/**
+ * Format a bet confirmation notification for the public group.
+ */
+export function formatBetConfirmed(
+  userName: string,
+  amount: number,
+  outcomeLabel: string,
+  marketQuestion: string,
+  outcomes: { label: string }[],
+  newPrices: number[],
+  url: string,
+): string {
+  const oddsStr = outcomes
+    .map((o, i) => `${o.label} ${Math.round(newPrices[i] * 100)}%`)
+    .join(" | ");
+
+  return [
+    `${userName} just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
+    `"${marketQuestion}"`,
+    "",
+    `New odds: ${oddsStr}`,
+    "",
+    url,
+  ].join("\n");
 }
 
 /**

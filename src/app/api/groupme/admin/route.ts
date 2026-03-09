@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { computeTrade, getPrices } from "@/lib/lmsr";
-import { toNumber } from "@/lib/utils";
+import { computeTrade } from "@/lib/lmsr";
+import { toNumber, getBaseUrl } from "@/lib/utils";
 import {
   postToGroupMe,
   postToAdminGroupMe,
-  shouldNotifyOddsShift,
-  formatOddsShift,
+  formatBetConfirmed,
 } from "@/lib/groupme";
-import { getBaseUrl } from "@/lib/utils";
 import { Prisma } from "@/generated/prisma";
 
 /**
@@ -65,7 +63,7 @@ export async function POST(request: NextRequest) {
 
 async function handleConfirm(
   betRequestId: string,
-  settings: { rakePercent?: number } | null
+  settings: { rakePercent?: number } | null,
 ) {
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -104,7 +102,7 @@ async function handleConfirm(
       });
 
       const outcomeIndex = outcomes.findIndex(
-        (o) => o.id === betRequest.outcomeId
+        (o) => o.id === betRequest.outcomeId,
       );
       if (outcomeIndex === -1) throw new Error("Outcome not found");
 
@@ -114,7 +112,7 @@ async function handleConfirm(
       const trade = computeTrade(
         { shares, b: betRequest.market.bParam },
         outcomeIndex,
-        dollarAmount
+        dollarAmount,
       );
 
       const priceAtBet = trade.newPrices[outcomeIndex];
@@ -187,39 +185,22 @@ async function handleConfirm(
 
     // Reply to admin
     await postToAdminGroupMe(
-      `Confirmed! ${result.userName}'s $${result.dollarAmount.toFixed(2)} bet on "${result.outcomeLabel}" is live. (${result.bet.shares.toFixed(1)} shares)`
+      `Confirmed! ${result.userName}'s $${result.dollarAmount.toFixed(2)} bet on "${result.outcomeLabel}" is live. (${result.bet.shares.toFixed(1)} shares)`,
     );
 
-    // Check for odds shift notification to public group
-    const lastNotified = result.market.lastNotifiedPrices as Record<
-      string,
-      number
-    > | null;
-    const outcomeIds = result.outcomes.map((o) => o.id);
-
-    if (shouldNotifyOddsShift(result.newPrices, lastNotified, outcomeIds)) {
-      const baseUrl = getBaseUrl();
-      postToGroupMe(
-        formatOddsShift(
-          result.market.question,
-          result.outcomes.map((o) => ({ id: o.id, label: o.label })),
-          result.newPrices,
-          lastNotified ?? {},
-          `${baseUrl}/market/${result.market.id}`
-        )
-      );
-
-      const newNotifiedPrices: Record<string, number> = {};
-      result.outcomes.forEach((o, i) => {
-        newNotifiedPrices[o.id] = result.newPrices[i];
-      });
-      prisma.market
-        .update({
-          where: { id: result.market.id },
-          data: { lastNotifiedPrices: newNotifiedPrices },
-        })
-        .catch(console.error);
-    }
+    // Post to public group chat
+    const baseUrl = getBaseUrl();
+    postToGroupMe(
+      formatBetConfirmed(
+        result.userName,
+        result.dollarAmount,
+        result.outcomeLabel,
+        result.market.question,
+        result.outcomes.map((o) => ({ label: o.label })),
+        result.newPrices,
+        `${baseUrl}/market/${result.market.id}`,
+      ),
+    );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     await postToAdminGroupMe(`Error confirming bet: ${msg}`);
@@ -239,7 +220,7 @@ async function handleReject(betRequestId: string) {
 
     if (betRequest.status !== "PENDING") {
       await postToAdminGroupMe(
-        `Bet request already ${betRequest.status.toLowerCase()}`
+        `Bet request already ${betRequest.status.toLowerCase()}`,
       );
       return;
     }
@@ -250,7 +231,7 @@ async function handleReject(betRequestId: string) {
     });
 
     await postToAdminGroupMe(
-      `Rejected ${betRequest.userName}'s $${toNumber(betRequest.amount).toFixed(2)} bet request.`
+      `Rejected ${betRequest.userName}'s $${toNumber(betRequest.amount).toFixed(2)} bet request.`,
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
@@ -276,11 +257,11 @@ async function handleStatus() {
 
     const lines = pending.map(
       (r) =>
-        `- ${r.userName} (${r.venmoUsername}): $${toNumber(r.amount).toFixed(2)} on "${r.outcome.label}" [${r.market.question}]\n  ID: ${r.id}`
+        `- ${r.userName} (${r.venmoUsername}): $${toNumber(r.amount).toFixed(2)} on "${r.outcome.label}" [${r.market.question}]\n  ID: ${r.id}`,
     );
 
     await postToAdminGroupMe(
-      [`${pending.length} PENDING REQUESTS:`, "", ...lines].join("\n")
+      [`${pending.length} PENDING REQUESTS:`, "", ...lines].join("\n"),
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
