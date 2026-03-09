@@ -105,7 +105,7 @@ export function formatBetConfirmed(
     .join(" | ");
 
   return [
-    `Someone just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
+    `💰 Someone just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
     `"${marketQuestion}"`,
     "",
     `New odds: ${oddsStr}`,
@@ -136,12 +136,12 @@ export function formatNewMarket(
   });
 
   return [
-    `NEW MARKET: "${question}"`,
+    `🟢 NEW MARKET: "${question}"`,
     "",
     `Outcomes: ${outcomeStr}`,
     `Closes: ${closeDate}`,
     "",
-    `Place your bets -> ${url}`,
+    `Place your bets 👉 ${url}`,
   ].join("\n");
 }
 
@@ -163,7 +163,7 @@ export function formatOddsShift(
     return `${o.label}: ${prev}% -> ${curr}% (${sign}${delta})`;
   });
 
-  return [`ODDS SHIFT: "${question}"`, "", ...lines, "", url].join("\n");
+  return [`📊 ODDS SHIFT: "${question}"`, "", ...lines, "", url].join("\n");
 }
 
 /**
@@ -178,13 +178,13 @@ export function formatResolution(
   url: string,
 ): string {
   return [
-    `RESOLVED: "${question}"`,
+    `🏆 RESOLVED: "${question}"`,
     "",
     `Result: ${winnerLabel}`,
     "",
-    `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Total pot: $${totalPot.toFixed(2)}`,
+    `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Total pot: $${totalPot.toFixed(2)} 💸`,
     "",
-    `See results -> ${url}`,
+    `See results 👉 ${url}`,
   ].join("\n");
 }
 
@@ -192,7 +192,7 @@ export function formatResolution(
  * Format a cancellation notification.
  */
 export function formatCancellation(question: string): string {
-  return `CANCELLED: "${question}" -- All bets are refunded.`;
+  return `🚫 CANCELLED: "${question}" — All bets are refunded.`;
 }
 
 /**
