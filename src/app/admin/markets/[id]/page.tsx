@@ -66,6 +66,7 @@ export default async function AdminMarketPage({
       payouts,
       totalPool: totalVolume,
       winnerLabel: winnerOutcome?.label ?? "N/A",
+      isCancelled,
     };
   }
 

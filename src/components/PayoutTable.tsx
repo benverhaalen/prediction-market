@@ -16,14 +16,19 @@ interface PayoutTableProps {
   payouts: PayoutEntry[];
   totalPool: number;
   winnerLabel: string;
+  isCancelled?: boolean;
 }
 
 export function PayoutTable({
   payouts,
   totalPool,
   winnerLabel,
+  isCancelled = false,
 }: PayoutTableProps) {
-  const winners = payouts.filter((p) => p.isWinner && p.netPayout > 0);
+  // Cancelled: everyone gets a refund. Resolved: only winners get paid.
+  const recipients = isCancelled
+    ? payouts.filter((p) => p.netPayout > 0)
+    : payouts.filter((p) => p.isWinner && p.netPayout > 0);
   const [paid, setPaid] = useState<Record<number, boolean>>({});
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -37,19 +42,28 @@ export function PayoutTable({
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const allPaid = winners.length > 0 && winners.every((_, i) => paid[i]);
+  const allPaid = recipients.length > 0 && recipients.every((_, i) => paid[i]);
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
       <div className="mb-4">
         <h3 className="font-display text-lg font-semibold">
-          Payouts — Result: <span className="text-green">{winnerLabel}</span>
+          {isCancelled ? (
+            <>
+              Refunds — <span className="text-red">Cancelled</span>
+            </>
+          ) : (
+            <>
+              Payouts — Result:{" "}
+              <span className="text-green">{winnerLabel}</span>
+            </>
+          )}
         </h3>
       </div>
 
       {/* Venmo payout cards */}
       <div className="space-y-3 mb-4">
-        {winners.map((w, i) => (
+        {recipients.map((w, i) => (
           <div
             key={i}
             className={`rounded-lg border p-3 transition-colors ${
@@ -150,15 +164,17 @@ export function PayoutTable({
       </div>
 
       {/* Progress indicator */}
-      {winners.length > 0 && (
+      {recipients.length > 0 && (
         <div
           className={`rounded-lg p-2 text-center text-sm font-medium ${
             allPaid ? "bg-green-dim/20 text-green" : "bg-surface-2 text-muted"
           }`}
         >
           {allPaid
-            ? "All payouts sent!"
-            : `${Object.values(paid).filter(Boolean).length} / ${winners.length} paid`}
+            ? isCancelled
+              ? "All refunds sent!"
+              : "All payouts sent!"
+            : `${Object.values(paid).filter(Boolean).length} / ${recipients.length} ${isCancelled ? "refunded" : "paid"}`}
         </div>
       )}
 
