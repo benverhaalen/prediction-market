@@ -1,35 +1,41 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, checkCsrfOrigin } from "@/lib/auth";
 import { toNumber } from "@/lib/utils";
 import { postToGroupMe, formatCancellation } from "@/lib/groupme";
 import { Prisma } from "@/generated/prisma";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!checkCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const { id } = await params;
 
-  const market = await prisma.market.findUnique({
-    where: { id },
-    include: {
-      bets: { include: { user: true } },
-    },
-  });
+  const marketQuestion = await prisma.$transaction(async (tx) => {
+    // Lock the market row to prevent double-cancel
+    await tx.$queryRaw`SELECT id FROM "Market" WHERE id = ${id} FOR UPDATE`;
 
-  if (!market) {
-    return NextResponse.json({ error: "Market not found" }, { status: 404 });
-  }
-  if (market.status === "RESOLVED" || market.status === "CANCELLED") {
-    return NextResponse.json({ error: "Cannot cancel" }, { status: 409 });
-  }
+    const market = await tx.market.findUnique({
+      where: { id },
+      include: {
+        bets: { include: { user: true } },
+      },
+    });
 
-  await prisma.$transaction(async (tx) => {
+    if (!market) {
+      throw new Error("Market not found");
+    }
+    if (market.status === "RESOLVED" || market.status === "CANCELLED") {
+      throw new Error("Cannot cancel");
+    }
+
     // Mark market cancelled
     await tx.market.update({
       where: { id },
@@ -64,10 +70,12 @@ export async function POST(
       where: { marketId: id, status: "PENDING" },
       data: { status: "EXPIRED" },
     });
+
+    return market.question;
   });
 
   // GroupMe notification
-  await postToGroupMe(formatCancellation(market.question));
+  await postToGroupMe(formatCancellation(marketQuestion));
 
   return NextResponse.json({ success: true });
 }

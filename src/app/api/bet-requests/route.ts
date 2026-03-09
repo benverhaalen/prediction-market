@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { toNumber, getBaseUrl } from "@/lib/utils";
+import { getPrices } from "@/lib/lmsr";
 import { postToAdminGroupMe, formatBetRequestAdmin } from "@/lib/groupme";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { userName, venmoUsername, marketId, outcomeId, amount } = body;
+  const { userName, venmoUsername, marketId, outcomeId, amount, expectedPrice } =
+    body;
 
   if (
     !userName?.trim() ||
@@ -21,10 +23,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (amount < 1) {
-    return NextResponse.json({ error: "Minimum bet is $1" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Minimum amount is $1" },
+      { status: 400 },
+    );
   }
 
-  // Check max bet amount
+  // Check settings
   const settings = await prisma.settings.findUnique({
     where: { id: "global" },
   });
@@ -32,8 +37,19 @@ export async function POST(request: NextRequest) {
 
   if (amount > maxBet) {
     return NextResponse.json(
-      { error: `Maximum bet is $${maxBet}` },
+      { error: `Maximum amount is $${maxBet}` },
       { status: 400 },
+    );
+  }
+
+  // Block admin from placing predictions
+  if (
+    settings?.adminUserName &&
+    userName.trim().toLowerCase() === settings.adminUserName.toLowerCase()
+  ) {
+    return NextResponse.json(
+      { error: "This name is reserved" },
+      { status: 403 },
     );
   }
 
@@ -49,18 +65,43 @@ export async function POST(request: NextRequest) {
 
   if (market.status !== "OPEN") {
     return NextResponse.json(
-      { error: "Market is not accepting bets" },
+      { error: "Market is not accepting predictions" },
       { status: 400 },
     );
   }
 
+  // Market closing enforcement
   if (new Date() > market.closesAt) {
+    if (market.status === "OPEN") {
+      await prisma.market.update({
+        where: { id: marketId },
+        data: { status: "CLOSED" },
+      });
+    }
     return NextResponse.json({ error: "Market has closed" }, { status: 400 });
   }
 
   const outcome = market.outcomes.find((o) => o.id === outcomeId);
   if (!outcome) {
     return NextResponse.json({ error: "Invalid outcome" }, { status: 400 });
+  }
+
+  // Slippage protection
+  if (expectedPrice !== undefined && expectedPrice > 0) {
+    const shares = market.outcomes.map((o) => o.shares);
+    const prices = getPrices({ shares, b: market.bParam });
+    const outcomeIndex = market.outcomes.findIndex((o) => o.id === outcomeId);
+    const actualPrice = prices[outcomeIndex];
+    const slippage = Math.abs(actualPrice - expectedPrice) / expectedPrice;
+
+    if (slippage > 0.1) {
+      return NextResponse.json(
+        {
+          error: `Odds have changed (was ${Math.round(expectedPrice * 100)}%, now ${Math.round(actualPrice * 100)}%). Please review and try again.`,
+        },
+        { status: 409 },
+      );
+    }
   }
 
   const betRequest = await prisma.betRequest.create({

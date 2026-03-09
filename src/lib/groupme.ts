@@ -105,7 +105,7 @@ export function formatBetConfirmed(
     .join(" | ");
 
   return [
-    `💰 ${userName} just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
+    `💰 ${userName} just placed $${amount.toFixed(2)} on "${outcomeLabel}"`,
     `"${marketQuestion}"`,
     "",
     `New odds: ${oddsStr}`,
@@ -141,7 +141,7 @@ export function formatNewMarket(
     `Outcomes: ${outcomeStr}`,
     `Closes: ${closeDate}`,
     "",
-    `Place your bets 👉 ${url}`,
+    `Make your picks 👉 ${url}`,
   ].join("\n");
 }
 
@@ -176,28 +176,29 @@ export function formatResolution(
   totalPool: number,
   totalRake: number,
   url: string,
+  resolutionNote?: string,
 ): string {
   const poolLine =
     totalRake > 0
       ? `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Pool: $${totalPool.toFixed(2)} | House: $${totalRake.toFixed(2)} 💸`
       : `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Pool: $${totalPool.toFixed(2)} 💸`;
 
-  return [
-    `🏆 RESOLVED: "${question}"`,
-    "",
-    `Result: ${winnerLabel}`,
-    "",
-    poolLine,
-    "",
-    `See results 👉 ${url}`,
-  ].join("\n");
+  const lines = [`🏆 RESOLVED: "${question}"`, "", `Result: ${winnerLabel}`];
+
+  if (resolutionNote) {
+    lines.push(`Note: ${resolutionNote}`);
+  }
+
+  lines.push("", poolLine, "", `See results 👉 ${url}`);
+
+  return lines.join("\n");
 }
 
 /**
  * Format a cancellation notification.
  */
 export function formatCancellation(question: string): string {
-  return `🚫 CANCELLED: "${question}" — All bets are refunded.`;
+  return `🚫 CANCELLED: "${question}" — All predictions are refunded.`;
 }
 
 /**
@@ -214,7 +215,7 @@ export function formatBetRequestAdmin(
   url: string,
 ): [string, string] {
   const infoMsg = [
-    `NEW BET REQUEST`,
+    `NEW PREDICTION REQUEST`,
     `${userName} (${venmoUsername}) wants $${amount.toFixed(2)} on "${outcomeLabel}"`,
     `Market: ${marketQuestion}`,
     "",

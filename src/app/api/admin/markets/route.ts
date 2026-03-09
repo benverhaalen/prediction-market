@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, checkCsrfOrigin } from "@/lib/auth";
 import { postToGroupMe, formatNewMarket } from "@/lib/groupme";
 import { getBaseUrl } from "@/lib/utils";
 
@@ -8,13 +8,30 @@ export async function POST(request: NextRequest) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!checkCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const body = await request.json();
-  const { question, description, outcomes, closesAt, bParam } = body;
+  const {
+    question,
+    description,
+    resolutionCriteria,
+    outcomes,
+    closesAt,
+    bParam,
+  } = body;
 
   if (!question?.trim() || !outcomes?.length || !closesAt) {
     return NextResponse.json(
       { error: "Missing required fields" },
+      { status: 400 },
+    );
+  }
+
+  if (!resolutionCriteria?.trim()) {
+    return NextResponse.json(
+      { error: "Resolution criteria required" },
       { status: 400 },
     );
   }
@@ -35,6 +52,7 @@ export async function POST(request: NextRequest) {
     data: {
       question: question.trim(),
       description: description?.trim() || null,
+      resolutionCriteria: resolutionCriteria.trim(),
       bParam: b,
       closesAt: new Date(closesAt),
       outcomes: {

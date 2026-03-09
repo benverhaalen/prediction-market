@@ -135,7 +135,9 @@ export function PayoutPreview({
               If <span className="text-blue">{outcome.label}</span> wins:
             </div>
             {winners.length === 0 ? (
-              <div className="text-xs text-muted">No bets on this outcome</div>
+              <div className="text-xs text-muted">
+                No predictions on this outcome
+              </div>
             ) : (
               <div className="space-y-1">
                 {winners.map((w, i) => (

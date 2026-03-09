@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, checkCsrfOrigin } from "@/lib/auth";
 
 export async function POST(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!checkCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;
@@ -25,8 +28,10 @@ export async function POST(
 
   if (market._count.bets > 0) {
     return NextResponse.json(
-      { error: "Cannot delete a market with existing bets. Cancel it instead." },
-      { status: 400 }
+      {
+        error: "Cannot delete a market with existing bets. Cancel it instead.",
+      },
+      { status: 400 },
     );
   }
 

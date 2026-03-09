@@ -6,6 +6,8 @@ import Link from "next/link";
 interface SettingsData {
   defaultBParam: number;
   rakePercent: number;
+  siteEnabled: boolean;
+  adminUserName: string | null;
   groupmeBotId: string | null;
   adminGroupmeBotId: string | null;
   adminGroupmeGroupId: string | null;
@@ -45,6 +47,17 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage("");
 
+    // Confirm kill switch
+    if (!settings.siteEnabled) {
+      const confirmed = window.confirm(
+        "Site is OFF. This will cancel ALL open markets and refund all predictions. Continue?",
+      );
+      if (!confirmed) {
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/admin/settings", {
         method: "PATCH",
@@ -52,6 +65,8 @@ export default function SettingsPage() {
         body: JSON.stringify({
           defaultBParam: settings.defaultBParam,
           rakePercent: settings.rakePercent,
+          siteEnabled: settings.siteEnabled,
+          adminUserName: settings.adminUserName,
           groupmeBotId: settings.groupmeBotId,
           adminGroupmeBotId: settings.adminGroupmeBotId,
           adminGroupmeGroupId: settings.adminGroupmeGroupId,
@@ -63,6 +78,8 @@ export default function SettingsPage() {
 
       if (!res.ok) throw new Error("Failed to save");
 
+      const updated = await res.json();
+      setSettings({ ...updated, maxBetAmount: Number(updated.maxBetAmount) });
       setMessage("Settings saved");
       setNewPassword("");
       setTimeout(() => setMessage(""), 3000);
@@ -97,8 +114,66 @@ export default function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-4 space-y-4">
+        {/* Kill Switch */}
+        <div
+          className={`rounded-xl border p-4 ${
+            settings.siteEnabled
+              ? "border-green/30 bg-green-dim/10"
+              : "border-red/30 bg-red-dim/10"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-lg font-semibold">
+                Site {settings.siteEnabled ? "ON" : "OFF"}
+              </h3>
+              <p className="text-xs text-muted mt-0.5">
+                {settings.siteEnabled
+                  ? "Site is live and accepting predictions"
+                  : "Site is hidden. Turning OFF cancels all open markets."}
+              </p>
+            </div>
+            <button
+              onClick={() =>
+                setSettings({
+                  ...settings,
+                  siteEnabled: !settings.siteEnabled,
+                })
+              }
+              className={`min-h-[44px] min-w-[80px] rounded-lg font-display font-semibold text-sm cursor-pointer transition-colors ${
+                settings.siteEnabled
+                  ? "bg-green text-black hover:bg-green/90"
+                  : "bg-red text-white hover:bg-red/90"
+              }`}
+            >
+              {settings.siteEnabled ? "ON" : "OFF"}
+            </button>
+          </div>
+        </div>
+
         {/* Settings form */}
         <div className="space-y-4">
+          <div>
+            <label className="text-xs text-muted block mb-1.5">
+              Admin User Name (blocked from predictions)
+            </label>
+            <input
+              type="text"
+              value={settings.adminUserName ?? ""}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  adminUserName: e.target.value || null,
+                })
+              }
+              placeholder="Your name (as it would appear in predictions)"
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
+            />
+            <p className="text-xs text-muted mt-1">
+              Predictions submitted under this name will be rejected
+            </p>
+          </div>
+
           <div>
             <label className="text-xs text-muted block mb-1.5">
               House Rake (%)
@@ -125,7 +200,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="text-xs text-muted block mb-1.5">
-              Max Bet Amount ($)
+              Max Prediction Amount ($)
             </label>
             <input
               type="number"
@@ -140,7 +215,7 @@ export default function SettingsPage() {
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
             <p className="text-xs text-muted mt-1">
-              Maximum anyone can bet on a single wager
+              Maximum anyone can put on a single prediction
             </p>
           </div>
 

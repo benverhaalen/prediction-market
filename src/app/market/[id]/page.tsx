@@ -37,6 +37,18 @@ export default async function MarketPage({
     where: { id: "global" },
   });
 
+  if (!settings?.siteEnabled) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="font-display text-3xl font-bold text-muted">
+            Coming Soon
+          </h1>
+        </div>
+      </div>
+    );
+  }
+
   const shares = market.outcomes.map((o) => o.shares);
   const prices = getPrices({ shares, b: market.bParam });
   const totalVolume = market.bets.reduce((sum, b) => sum + toNumber(b.cost), 0);
@@ -131,9 +143,19 @@ export default async function MarketPage({
           {market.description && (
             <p className="text-sm text-muted">{market.description}</p>
           )}
+          {market.resolutionCriteria && (
+            <div className="mt-2 rounded-lg bg-surface-2 p-3">
+              <div className="text-xs text-muted font-semibold uppercase tracking-wider mb-1">
+                Resolution Criteria
+              </div>
+              <p className="text-sm text-foreground/80">
+                {market.resolutionCriteria}
+              </p>
+            </div>
+          )}
           <div className="mt-2 flex gap-4 text-xs text-muted">
             <span>{formatDollars(totalVolume)} pool</span>
-            <span>{market._count.bets} bets</span>
+            <span>{market._count.bets} predictions</span>
             <span>
               {market.status === "RESOLVED"
                 ? "Resolved"
@@ -149,6 +171,9 @@ export default async function MarketPage({
             <div className="font-display text-2xl font-bold text-green">
               {winnerOutcome.label}
             </div>
+            {market.resolutionNote && (
+              <p className="text-sm text-muted mt-1">{market.resolutionNote}</p>
+            )}
           </div>
         )}
 

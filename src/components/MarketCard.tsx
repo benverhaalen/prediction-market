@@ -65,9 +65,11 @@ export function MarketCard({
 
       <div className="mt-3 flex items-center gap-4 text-xs text-muted">
         <span>{formatDollars(totalVolume)} vol</span>
-        <span>{betCount} bets</span>
+        <span>{betCount} predictions</span>
         <span className="ml-auto">
-          {isResolved ? "Resolved" : `Closes ${relativeTime(new Date(closesAt))}`}
+          {isResolved
+            ? "Resolved"
+            : `Closes ${relativeTime(new Date(closesAt))}`}
         </span>
       </div>
     </Link>

@@ -8,6 +8,7 @@ export default function NewMarket() {
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [description, setDescription] = useState("");
+  const [resolutionCriteria, setResolutionCriteria] = useState("");
   const [marketType, setMarketType] = useState<"binary" | "multi">("binary");
   const [outcomes, setOutcomes] = useState<string[]>(["Yes", "No"]);
   const [closesAt, setClosesAt] = useState("");
@@ -54,6 +55,7 @@ export default function NewMarket() {
         body: JSON.stringify({
           question,
           description: description || undefined,
+          resolutionCriteria,
           outcomes: filteredOutcomes,
           closesAt,
           bParam,
@@ -108,15 +110,34 @@ export default function NewMarket() {
           {/* Description */}
           <div>
             <label className="text-xs text-muted block mb-1">
-              Description / Resolution Criteria (optional)
+              Description (optional)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="How will this be resolved? Any special rules?"
-              rows={3}
+              placeholder="Extra context about this market"
+              rows={2}
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none resize-none"
             />
+          </div>
+
+          {/* Resolution Criteria */}
+          <div>
+            <label className="text-xs text-muted block mb-1">
+              Resolution Criteria
+            </label>
+            <textarea
+              value={resolutionCriteria}
+              onChange={(e) => setResolutionCriteria(e.target.value)}
+              placeholder='e.g. "Resolved YES if Chiefs win per NFL.com final score. Resolved NO otherwise."'
+              required
+              rows={2}
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none resize-none"
+            />
+            <p className="text-xs text-muted mt-1">
+              How exactly will this be resolved? What source determines the
+              result?
+            </p>
           </div>
 
           {/* Market type */}
@@ -209,8 +230,8 @@ export default function NewMarket() {
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
             />
             <p className="text-xs text-muted mt-1">
-              Controls how much odds move per bet. Higher = more stable odds.
-              Default is 20
+              Controls how much odds move per prediction. Higher = more stable
+              odds. Default is 20
             </p>
           </div>
 

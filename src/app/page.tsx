@@ -7,6 +7,22 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const settings = await prisma.settings.findUnique({
+    where: { id: "global" },
+  });
+
+  if (!settings?.siteEnabled) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="font-display text-3xl font-bold text-muted">
+            Coming Soon
+          </h1>
+        </div>
+      </div>
+    );
+  }
+
   const markets = await prisma.market.findMany({
     orderBy: { createdAt: "desc" },
     include: {

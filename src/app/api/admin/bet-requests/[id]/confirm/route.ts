@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, checkCsrfOrigin } from "@/lib/auth";
 import { computeTrade } from "@/lib/lmsr";
 import { toNumber, getBaseUrl } from "@/lib/utils";
 import { postToGroupMe, formatBetConfirmed } from "@/lib/groupme";
 import { Prisma } from "@/generated/prisma";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!checkCsrfOrigin(request)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { id } = await params;
@@ -39,6 +42,19 @@ export async function POST(
         data: { status: "EXPIRED" },
       });
       throw new Error("Market is no longer open");
+    }
+
+    // Market closing enforcement
+    if (new Date() > betRequest.market.closesAt) {
+      await tx.market.update({
+        where: { id: betRequest.marketId },
+        data: { status: "CLOSED" },
+      });
+      await tx.betRequest.update({
+        where: { id },
+        data: { status: "EXPIRED" },
+      });
+      throw new Error("Market has closed");
     }
 
     // 2. Lock outcome rows with SELECT FOR UPDATE

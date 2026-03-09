@@ -23,6 +23,15 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-body);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Allow text selection in inputs and specific elements */
+input, textarea, .selectable {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Custom scrollbar for dark theme */

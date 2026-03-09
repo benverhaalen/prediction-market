@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
   // Unrecognized command
   await postToAdminGroupMe(
-    `Unknown command. Available commands:\n• y <id> — confirm a bet\n• n <id> — reject a bet\n• status — list pending bets`,
+    `Unknown command. Available commands:\n• y <id> — confirm\n• n <id> — reject\n• status — list pending`,
   );
   return NextResponse.json({ ok: true });
 }
@@ -89,6 +89,19 @@ async function handleConfirm(betRequestId: string) {
           data: { status: "EXPIRED" },
         });
         throw new Error("Market is no longer open");
+      }
+
+      // Market closing enforcement
+      if (new Date() > betRequest.market.closesAt) {
+        await tx.market.update({
+          where: { id: betRequest.marketId },
+          data: { status: "CLOSED" },
+        });
+        await tx.betRequest.update({
+          where: { id: betRequestId },
+          data: { status: "EXPIRED" },
+        });
+        throw new Error("Market has closed");
       }
 
       // Lock outcome rows
@@ -177,7 +190,7 @@ async function handleConfirm(betRequestId: string) {
 
     // Reply to admin
     await postToAdminGroupMe(
-      `✅ Confirmed! ${result.userName}'s $${result.dollarAmount.toFixed(2)} bet on "${result.outcomeLabel}" is live. (${result.bet.shares.toFixed(1)} shares)`,
+      `✅ Confirmed! ${result.userName}'s $${result.dollarAmount.toFixed(2)} on "${result.outcomeLabel}" is live. (${result.bet.shares.toFixed(1)} shares)`,
     );
 
     // Post to public group chat
@@ -221,7 +234,7 @@ async function handleReject(betRequestId: string) {
     });
 
     await postToAdminGroupMe(
-      `❌ Rejected ${betRequest.userName}'s $${toNumber(betRequest.amount).toFixed(2)} bet request.`,
+      `❌ Rejected ${betRequest.userName}'s $${toNumber(betRequest.amount).toFixed(2)} prediction request.`,
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
@@ -241,7 +254,7 @@ async function handleStatus() {
     });
 
     if (pending.length === 0) {
-      await postToAdminGroupMe("No pending bet requests.");
+      await postToAdminGroupMe("No pending requests.");
       return;
     }
 

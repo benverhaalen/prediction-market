@@ -16,10 +16,10 @@ const barlowCondensed = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: "Predictions",
-  description: "Prediction Market",
+  description: "Predictions",
   openGraph: {
     title: "Predictions",
-    description: "Prediction Market",
+    description: "Predictions",
     type: "website",
   },
 };
@@ -34,6 +34,11 @@ export default function RootLayout({
       <body
         className={`${barlow.variable} ${barlowCondensed.variable} antialiased`}
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.addEventListener('contextmenu',function(e){e.preventDefault()});`,
+          }}
+        />
         {children}
       </body>
     </html>

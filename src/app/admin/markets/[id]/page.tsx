@@ -111,7 +111,7 @@ export default async function AdminMarketPage({
           )}
           <div className="mt-2 flex gap-4 text-xs text-muted">
             <span>{formatDollars(totalVolume)} pool</span>
-            <span>{market._count.bets} bets</span>
+            <span>{market._count.bets} predictions</span>
             <span>b={market.bParam}</span>
           </div>
         </div>
@@ -145,10 +145,10 @@ export default async function AdminMarketPage({
         {/* All bets (admin view) */}
         <section>
           <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted mb-2">
-            All Bets ({market.bets.length})
+            All Predictions ({market.bets.length})
           </h3>
           {market.bets.length === 0 ? (
-            <div className="text-sm text-muted">No bets yet</div>
+            <div className="text-sm text-muted">No predictions yet</div>
           ) : (
             <div className="space-y-1">
               {market.bets.map((b) => (

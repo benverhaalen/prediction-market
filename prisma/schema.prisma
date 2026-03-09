@@ -21,6 +21,8 @@ model Market {
   id                 String       @id @default(cuid())
   question           String
   description        String?
+  resolutionCriteria String       @default("")
+  resolutionNote     String?
   status             MarketStatus @default(OPEN)
   resolution         String?
   bParam             Float        @default(20)
@@ -124,6 +126,8 @@ model Settings {
   id                 String  @id @default("global")
   defaultBParam      Float   @default(20)
   rakePercent        Float   @default(0.05)
+  siteEnabled        Boolean @default(true)
+  adminUserName      String?
   groupmeBotId       String?
   groupmeToken       String?
   adminGroupmeBotId  String?

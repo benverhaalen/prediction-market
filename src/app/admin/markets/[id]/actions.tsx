@@ -15,18 +15,22 @@ export function AdminMarketActions({
   const router = useRouter();
   const [resolveOpen, setResolveOpen] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState(outcomes[0]?.id ?? "");
+  const [resolutionNote, setResolutionNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
 
   const handleResolve = async () => {
-    if (!selectedOutcome) return;
+    if (!selectedOutcome || !resolutionNote.trim()) return;
     setLoading(true);
 
     try {
       const res = await fetch(`/api/admin/markets/${marketId}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winningOutcomeId: selectedOutcome }),
+        body: JSON.stringify({
+          winningOutcomeId: selectedOutcome,
+          resolutionNote: resolutionNote.trim(),
+        }),
       });
 
       if (!res.ok) {
@@ -103,10 +107,23 @@ export function AdminMarketActions({
               </button>
             ))}
           </div>
+          <div className="mb-3">
+            <label className="text-xs text-muted block mb-1.5">
+              Resolution Note (required)
+            </label>
+            <textarea
+              value={resolutionNote}
+              onChange={(e) => setResolutionNote(e.target.value)}
+              placeholder='e.g. "Final score: Chiefs 24, Eagles 17 per ESPN.com"'
+              required
+              rows={2}
+              className="w-full rounded-lg bg-surface border border-border px-3 py-2 text-sm focus:border-gold focus:outline-none resize-none"
+            />
+          </div>
           <div className="flex gap-2">
             <button
               onClick={handleResolve}
-              disabled={loading}
+              disabled={loading || !resolutionNote.trim()}
               className="flex-1 min-h-[48px] rounded-lg bg-green font-display font-semibold text-black cursor-pointer hover:bg-green/90 disabled:opacity-40 transition-colors"
             >
               {loading ? "Resolving..." : "Confirm Resolution"}
@@ -128,7 +145,7 @@ export function AdminMarketActions({
       {cancelConfirm && (
         <div className="rounded-xl border border-red/30 bg-red-dim/10 p-4">
           <p className="text-sm mb-3">
-            Cancel this market? All bets will be refunded.
+            Cancel this market? All predictions will be refunded.
           </p>
           <div className="flex gap-2">
             <button

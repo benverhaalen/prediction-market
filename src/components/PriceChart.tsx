@@ -34,7 +34,7 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
   if (data.length < 2) {
     return (
       <div className="flex h-48 items-center justify-center text-sm text-muted rounded-xl bg-surface-2">
-        Chart will appear after the first bet
+        Chart will appear after the first prediction
       </div>
     );
   }

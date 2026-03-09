@@ -98,6 +98,10 @@ export function BetRequestForm({
       localStorage.setItem("bettor_name", name.trim());
       localStorage.setItem("bettor_venmo", venmoUsername.trim());
 
+      const expectedPrice = outcomes.find(
+        (o) => o.id === selectedOutcome,
+      )?.probability;
+
       const res = await fetch("/api/bet-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,6 +111,7 @@ export function BetRequestForm({
           marketId,
           outcomeId: selectedOutcome,
           amount: numAmount,
+          expectedPrice,
         }),
       });
 
@@ -151,7 +156,7 @@ export function BetRequestForm({
     return (
       <div className="rounded-xl border border-green/30 bg-green-dim/20 p-5">
         <h3 className="font-display text-xl font-semibold text-green">
-          Bet Request Submitted
+          Prediction Request Submitted
         </h3>
         <p className="mt-3 text-sm text-foreground/80">
           Send {formatDollars(parseFloat(amount))} to{" "}
@@ -159,7 +164,7 @@ export function BetRequestForm({
           Venmo with this note:
         </p>
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 rounded-lg bg-surface-2 p-3 text-center font-mono text-sm">
+          <div className="selectable flex-1 rounded-lg bg-surface-2 p-3 text-center font-mono text-sm">
             {venmoNote}
           </div>
           <button
@@ -199,7 +204,7 @@ export function BetRequestForm({
           </button>
         </div>
         <p className="mt-3 text-xs text-muted">
-          Your bet will go live once payment is confirmed by the admin.
+          Your prediction will go live once payment is confirmed.
         </p>
         <button
           onClick={() => {
@@ -209,7 +214,7 @@ export function BetRequestForm({
           }}
           className="mt-4 min-h-[44px] w-full rounded-lg border border-border bg-surface-2 text-sm font-medium text-foreground cursor-pointer hover:bg-surface-3 transition-colors"
         >
-          Place another bet
+          Place another prediction
         </button>
       </div>
     );
@@ -220,7 +225,9 @@ export function BetRequestForm({
       onSubmit={handleSubmit}
       className="rounded-xl border border-border bg-surface p-5"
     >
-      <h3 className="font-display text-xl font-semibold mb-4">Place a Bet</h3>
+      <h3 className="font-display text-xl font-semibold mb-4">
+        Place a Prediction
+      </h3>
 
       {/* Name */}
       <div className="mb-4">
@@ -253,7 +260,7 @@ export function BetRequestForm({
 
       {/* Outcome dropdown */}
       <div className="mb-4">
-        <label className="text-xs text-muted block mb-1.5">Pick Your Bet</label>
+        <label className="text-xs text-muted block mb-1.5">Your Pick</label>
         <div className="relative">
           <select
             value={selectedOutcome}
@@ -288,7 +295,7 @@ export function BetRequestForm({
       {/* Amount */}
       <div className="mb-4">
         <label className="text-xs text-muted block mb-1.5">
-          Bet Amount ($1 – ${maxBetAmount})
+          Amount ($1 – ${maxBetAmount})
         </label>
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-base">
@@ -354,6 +361,10 @@ export function BetRequestForm({
         </div>
       )}
 
+      <p className="text-xs text-muted text-center mb-3">
+        All predictions are final once confirmed.
+      </p>
+
       <button
         type="submit"
         disabled={
@@ -365,7 +376,7 @@ export function BetRequestForm({
         }
         className="w-full min-h-[52px] rounded-lg bg-gold font-display text-xl font-semibold text-black transition-colors hover:bg-gold/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
-        {status === "loading" ? "Submitting..." : "Place Bet Request"}
+        {status === "loading" ? "Submitting..." : "Place Prediction Request"}
       </button>
     </form>
   );

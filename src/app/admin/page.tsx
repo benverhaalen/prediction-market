@@ -65,6 +65,13 @@ export default async function AdminDashboard() {
             >
               + Market
             </Link>
+            <a
+              href="/api/admin/export"
+              download
+              className="min-h-[44px] flex items-center rounded-lg bg-surface-2 border border-border px-3 text-sm text-muted cursor-pointer hover:text-foreground transition-colors"
+            >
+              CSV
+            </a>
             <Link
               href="/admin/settings"
               className="min-h-[44px] flex items-center rounded-lg bg-surface-2 border border-border px-3 text-sm text-muted cursor-pointer hover:text-foreground transition-colors"
@@ -142,7 +149,7 @@ export default async function AdminDashboard() {
                         </span>
                       ))}
                       <span className="ml-auto">
-                        {formatDollars(vol)} | {m._count.bets} bets
+                        {formatDollars(vol)} | {m._count.bets} predictions
                       </span>
                     </div>
                   </Link>
@@ -187,7 +194,7 @@ export default async function AdminDashboard() {
                         Result: {winner?.label ?? "N/A"}
                       </span>
                       <span className="ml-auto">
-                        {formatDollars(vol)} | {m._count.bets} bets
+                        {formatDollars(vol)} | {m._count.bets} predictions
                       </span>
                     </div>
                   </Link>
