@@ -28,6 +28,19 @@ export function shortCode(id: string): string {
 }
 
 /**
+ * Generate a random-looking lowercase memo string for Venmo payments.
+ * Looks like someone mashed their keyboard — no gambling terms.
+ */
+export function venmoMemo(): string {
+  const chars = "abcdefghjkmnpqrstuvwxyz";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+}
+
+/**
  * Get the base URL for the app.
  */
 export function getBaseUrl(): string {

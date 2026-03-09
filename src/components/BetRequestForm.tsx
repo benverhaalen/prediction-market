@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { formatDollars } from "@/lib/utils";
+import { formatDollars, venmoMemo } from "@/lib/utils";
 
 interface Outcome {
   id: string;
@@ -13,7 +13,6 @@ interface BetRequestFormProps {
   marketId: string;
   outcomes: Outcome[];
   venmoHandle: string;
-  marketShortCode: string;
   maxBetAmount: number;
 }
 
@@ -29,7 +28,6 @@ export function BetRequestForm({
   marketId,
   outcomes,
   venmoHandle,
-  marketShortCode,
   maxBetAmount,
 }: BetRequestFormProps) {
   const [name, setName] = useState("");
@@ -133,8 +131,8 @@ export function BetRequestForm({
   const selectedLabel =
     outcomes.find((o) => o.id === selectedOutcome)?.label ?? "";
 
-  // Venmo note: keep it generic to avoid TOS issues — no gambling terms
-  const venmoNote = `${marketShortCode} - ${name.trim() || "payment"}`;
+  // Venmo note: random-looking string — no gambling terms
+  const [venmoNote] = useState(() => venmoMemo());
 
   const handleCopyNote = async () => {
     try {

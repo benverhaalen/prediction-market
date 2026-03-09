@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPrices } from "@/lib/lmsr";
-import { toNumber, formatDollars, shortCode, relativeTime } from "@/lib/utils";
+import { toNumber, formatDollars, relativeTime } from "@/lib/utils";
 import { OddsDisplay } from "@/components/OddsDisplay";
 import { PriceChart } from "@/components/PriceChart";
 import { BetRequestForm } from "@/components/BetRequestForm";
@@ -207,7 +207,6 @@ export default async function MarketPage({
               probability: prices[i],
             }))}
             venmoHandle={settings?.venmoHandle ?? "@admin"}
-            marketShortCode={shortCode(market.id)}
             maxBetAmount={
               settings?.maxBetAmount ? toNumber(settings.maxBetAmount) : 100
             }
