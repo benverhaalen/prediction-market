@@ -41,11 +41,7 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
 
   const chartData = data.map((point) => {
     const entry: Record<string, string | number> = {
-      time: new Date(point.timestamp).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-      }),
+      time: new Date(point.timestamp).getTime(),
     };
     for (const outcome of outcomes) {
       entry[outcome.label] = Math.round((point.prices[outcome.id] ?? 0) * 100);
@@ -53,12 +49,25 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
     return entry;
   });
 
+  const showDots = data.length <= 5;
+
+  const formatTime = (ts: number) =>
+    new Date(ts).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
   return (
     <div className="h-48 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
           <XAxis
             dataKey="time"
+            type="number"
+            domain={["dataMin", "dataMax"]}
+            tickFormatter={formatTime}
             tick={{ fontSize: 10, fill: "#888" }}
             tickLine={false}
             axisLine={{ stroke: "#2A2A2A" }}
@@ -77,16 +86,17 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
               borderRadius: "8px",
               fontSize: "12px",
             }}
-            formatter={(value) => [`${value}%`]}
+            labelFormatter={(ts) => formatTime(ts as number)}
+            formatter={(value, name) => [`${value}%`, name]}
           />
           {outcomes.map((outcome, i) => (
             <Line
               key={outcome.id}
-              type="monotone"
+              type="stepAfter"
               dataKey={outcome.label}
               stroke={CHART_COLORS[i % CHART_COLORS.length]}
               strokeWidth={2}
-              dot={false}
+              dot={showDots ? { r: 4 } : false}
             />
           ))}
         </LineChart>

@@ -196,7 +196,8 @@ export function formatCancellation(question: string): string {
 }
 
 /**
- * Format an admin notification for a new bet request.
+ * Format admin notifications for a new bet request.
+ * Returns two messages: an info message and a copy-paste ID message.
  */
 export function formatBetRequestAdmin(
   betRequestId: string,
@@ -206,15 +207,18 @@ export function formatBetRequestAdmin(
   outcomeLabel: string,
   marketQuestion: string,
   url: string,
-): string {
-  return [
+): [string, string] {
+  const infoMsg = [
     `NEW BET REQUEST`,
     `${userName} (${venmoUsername}) wants $${amount.toFixed(2)} on "${outcomeLabel}"`,
     `Market: ${marketQuestion}`,
     "",
-    `Reply "confirm ${betRequestId}" after Venmo received`,
-    `Reply "reject ${betRequestId}" to decline`,
+    `Reply "y <id>" to confirm or "n <id>" to reject`,
     "",
     url,
   ].join("\n");
+
+  const idMsg = betRequestId;
+
+  return [infoMsg, idMsg];
 }

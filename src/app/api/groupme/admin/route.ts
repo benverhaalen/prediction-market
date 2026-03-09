@@ -12,7 +12,7 @@ import { Prisma } from "@/generated/prisma";
 /**
  * GroupMe callback for admin bot.
  * Receives all messages posted in the admin group.
- * Parses commands: "confirm <id>", "reject <id>", "status"
+ * Parses commands: "y <id>", "n <id>", "status"
  */
 export async function POST(request: NextRequest) {
   const data = await request.json();
@@ -36,16 +36,16 @@ export async function POST(request: NextRequest) {
 
   const text = (data.text || "").trim().toLowerCase();
 
-  // Handle "confirm <id>"
-  const confirmMatch = text.match(/^confirm\s+(.+)$/i);
+  // Handle "y <id>" (confirm)
+  const confirmMatch = text.match(/^y\s+(.+)$/i);
   if (confirmMatch) {
     const betRequestId = confirmMatch[1].trim();
     await handleConfirm(betRequestId, settings);
     return NextResponse.json({ ok: true });
   }
 
-  // Handle "reject <id>"
-  const rejectMatch = text.match(/^reject\s+(.+)$/i);
+  // Handle "n <id>" (reject)
+  const rejectMatch = text.match(/^n\s+(.+)$/i);
   if (rejectMatch) {
     const betRequestId = rejectMatch[1].trim();
     await handleReject(betRequestId);
