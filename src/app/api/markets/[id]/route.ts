@@ -15,7 +15,7 @@ export async function GET(
     include: {
       outcomes: true,
       _count: { select: { bets: true } },
-      bets: { select: { cost: true } },
+      bets: { select: { cost: true, outcomeId: true, userId: true } },
     },
   });
 
@@ -63,7 +63,21 @@ export async function GET(
           totalVolume,
           existingOutcomeShares,
         );
-        result.preview = preview;
+        // Count unique bettors on this outcome
+        const outcomeBettors = new Set(
+          market.bets
+            .filter((b) => b.outcomeId === outcomeId)
+            .map((b) => b.userId),
+        ).size;
+        const poolAfterBet = totalVolume + amount;
+        const poolShare =
+          poolAfterBet > 0 ? preview.estimatedPayout / poolAfterBet : 0;
+        result.preview = {
+          ...preview,
+          outcomeBettors,
+          poolAfterBet,
+          poolShare,
+        };
       }
     }
   }

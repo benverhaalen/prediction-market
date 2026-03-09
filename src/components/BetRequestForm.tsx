@@ -22,6 +22,9 @@ interface PreviewData {
   multiplier: number;
   currentPrice: number;
   newPrice: number;
+  outcomeBettors: number;
+  poolAfterBet: number;
+  poolShare: number;
 }
 
 export function BetRequestForm({
@@ -311,26 +314,34 @@ export function BetRequestForm({
         <div className="mb-4 rounded-xl border border-green/20 bg-green-dim/10 p-4">
           <div className="text-center">
             <div className="text-xs text-muted mb-1">
-              Estimated payout if {selectedLabel} wins
+              Current payout if {selectedLabel} wins
             </div>
             <div className="font-display text-3xl font-bold text-green">
               {formatDollars(preview.estimatedPayout)}
             </div>
-            <div className="text-xs text-muted/60 mt-1">
-              May change as more bets are placed
+            <div className="text-xs text-gold mt-1">
+              More bets = bigger pool = bigger payout
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-center text-sm">
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
             <div>
-              <div className="text-muted text-xs">Profit</div>
+              <div className="text-muted text-xs">Profit if you win</div>
               <div className="font-semibold text-green">
                 +{formatDollars(preview.estimatedPayout - parseFloat(amount))}
               </div>
             </div>
             <div>
-              <div className="text-muted text-xs">Multiplier</div>
+              <div className="text-muted text-xs">Your share of pool</div>
               <div className="font-semibold text-gold">
-                {preview.multiplier.toFixed(1)}x
+                {Math.round(preview.poolShare * 100)}%
+              </div>
+            </div>
+            <div>
+              <div className="text-muted text-xs">Winners split</div>
+              <div className="font-semibold text-blue">
+                {preview.outcomeBettors === 0
+                  ? "Just you"
+                  : `You + ${preview.outcomeBettors}`}
               </div>
             </div>
           </div>
