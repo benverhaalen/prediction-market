@@ -34,18 +34,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const text = (data.text || "").trim().toLowerCase();
+  const rawText = (data.text || "").trim();
+  const text = rawText.toLowerCase();
 
-  // Handle "y <id>" (confirm)
-  const confirmMatch = text.match(/^y\s+(.+)$/i);
+  // Handle "y <id>" (confirm) — preserve original case for the ID
+  const confirmMatch = rawText.match(/^y\s+(.+)$/i);
   if (confirmMatch) {
     const betRequestId = confirmMatch[1].trim();
     await handleConfirm(betRequestId, settings);
     return NextResponse.json({ ok: true });
   }
 
-  // Handle "n <id>" (reject)
-  const rejectMatch = text.match(/^n\s+(.+)$/i);
+  // Handle "n <id>" (reject) — preserve original case for the ID
+  const rejectMatch = rawText.match(/^n\s+(.+)$/i);
   if (rejectMatch) {
     const betRequestId = rejectMatch[1].trim();
     await handleReject(betRequestId);

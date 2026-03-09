@@ -3,7 +3,6 @@ import { isAdmin } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getPrices } from "@/lib/lmsr";
 import { toNumber, formatDollars } from "@/lib/utils";
-import { AdminBetConfirm } from "@/components/AdminBetConfirm";
 import { AdminAutoRefresh } from "@/components/AdminAutoRefresh";
 import { AdminDeleteMarket } from "@/components/AdminDeleteMarket";
 import Link from "next/link";
@@ -87,20 +86,26 @@ export default async function AdminDashboard() {
               No pending requests
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {pendingRequests.map((req) => (
-                <AdminBetConfirm
+                <div
                   key={req.id}
-                  request={{
-                    id: req.id,
-                    userName: req.userName,
-                    venmoUsername: req.venmoUsername,
-                    marketQuestion: req.market.question,
-                    outcomeLabel: req.outcome.label,
-                    amount: toNumber(req.amount),
-                    createdAt: req.createdAt.toISOString(),
-                  }}
-                />
+                  className="rounded-xl border border-gold/30 bg-surface p-3"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-medium text-sm">{req.userName}</span>
+                    <span className="font-display text-lg font-bold text-gold">
+                      {formatDollars(toNumber(req.amount))}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted mt-0.5">
+                    {req.venmoUsername} &middot; {req.outcome.label} &middot;{" "}
+                    {req.market.question}
+                  </div>
+                  <div className="text-xs text-muted/50 mt-1">
+                    Confirm via GroupMe
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -143,7 +148,10 @@ export default async function AdminDashboard() {
                   </Link>
                   {!hasBets && (
                     <div className="mt-2 pt-2 border-t border-border/50">
-                      <AdminDeleteMarket marketId={m.id} question={m.question} />
+                      <AdminDeleteMarket
+                        marketId={m.id}
+                        question={m.question}
+                      />
                     </div>
                   )}
                 </div>
@@ -160,7 +168,10 @@ export default async function AdminDashboard() {
             </h2>
             <div className="space-y-2">
               {resolvedMarkets.map((m) => {
-                const vol = m.bets.reduce((sum, b) => sum + toNumber(b.cost), 0);
+                const vol = m.bets.reduce(
+                  (sum, b) => sum + toNumber(b.cost),
+                  0,
+                );
                 const winner = m.outcomes.find((o) => o.id === m.resolution);
                 return (
                   <Link
