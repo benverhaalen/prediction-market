@@ -6,7 +6,9 @@ const COOKIE_NAME = "admin_session";
 const SESSION_TOKEN = "prediction-market-admin-session";
 
 export async function verifyAdminPassword(password: string): Promise<boolean> {
-  const settings = await prisma.settings.findUnique({ where: { id: "global" } });
+  const settings = await prisma.settings.findUnique({
+    where: { id: "global" },
+  });
   if (!settings) return false;
 
   // If password is still the default plaintext, compare directly
@@ -24,7 +26,7 @@ export async function setAdminSession(): Promise<void> {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60, // 60 seconds — just enough for the redirect
     path: "/",
   });
 }
