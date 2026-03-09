@@ -128,7 +128,7 @@ export async function POST(
     });
   });
 
-  // GroupMe notification (fire-and-forget)
+  // GroupMe notification
   const totalPot = payouts.reduce((sum, p) => sum + p.cost, 0);
   const totalRake = roundCents(payouts.reduce((sum, p) => sum + p.rake, 0));
   const baseUrl = getBaseUrl();
@@ -136,7 +136,7 @@ export async function POST(
   const winnerCount = payouts.filter(
     (p) => p.isWinner && p.netPayout > 0,
   ).length;
-  postToGroupMe(
+  await postToGroupMe(
     formatResolution(
       market.question,
       winningOutcome.label,

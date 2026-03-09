@@ -7,7 +7,7 @@ import { Prisma } from "@/generated/prisma";
 
 export async function POST(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,7 +67,7 @@ export async function POST(
   });
 
   // GroupMe notification
-  postToGroupMe(formatCancellation(market.question));
+  await postToGroupMe(formatCancellation(market.question));
 
   return NextResponse.json({ success: true });
 }

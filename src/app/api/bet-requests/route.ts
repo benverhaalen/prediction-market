@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // Notify admin via GroupMe (fire-and-forget, two messages)
+  // Notify admin via GroupMe (await so Vercel doesn't kill the request)
   const baseUrl = getBaseUrl();
   const [infoMsg, idMsg] = formatBetRequestAdmin(
     betRequest.id,
@@ -84,7 +84,8 @@ export async function POST(request: NextRequest) {
     market.question,
     `${baseUrl}/admin`,
   );
-  postToAdminGroupMe(infoMsg).then(() => postToAdminGroupMe(idMsg));
+  await postToAdminGroupMe(infoMsg);
+  await postToAdminGroupMe(idMsg);
 
   return NextResponse.json({ id: betRequest.id, status: "PENDING" });
 }

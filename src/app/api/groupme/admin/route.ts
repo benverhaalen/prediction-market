@@ -190,7 +190,7 @@ async function handleConfirm(
 
     // Post to public group chat
     const baseUrl = getBaseUrl();
-    postToGroupMe(
+    await postToGroupMe(
       formatBetConfirmed(
         result.dollarAmount,
         result.outcomeLabel,

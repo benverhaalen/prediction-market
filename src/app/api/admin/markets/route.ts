@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
     data: { lastNotifiedPrices: initialPrices },
   });
 
-  // Post to GroupMe (fire-and-forget)
+  // Post to GroupMe
   const baseUrl = getBaseUrl();
-  postToGroupMe(
+  await postToGroupMe(
     formatNewMarket(
       market.question,
       market.outcomes,

@@ -145,9 +145,9 @@ export async function POST(
     };
   });
 
-  // Post bet confirmation to public GroupMe (fire-and-forget)
+  // Post bet confirmation to public GroupMe
   const baseUrl = getBaseUrl();
-  postToGroupMe(
+  await postToGroupMe(
     formatBetConfirmed(
       result.dollarAmount,
       result.outcomeLabel,
