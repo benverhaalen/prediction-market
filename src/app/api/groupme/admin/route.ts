@@ -192,7 +192,6 @@ async function handleConfirm(
     const baseUrl = getBaseUrl();
     postToGroupMe(
       formatBetConfirmed(
-        result.userName,
         result.dollarAmount,
         result.outcomeLabel,
         result.market.question,

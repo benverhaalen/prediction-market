@@ -8,7 +8,7 @@ import { Prisma } from "@/generated/prisma";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,7 +20,7 @@ export async function POST(
   if (!winningOutcomeId) {
     return NextResponse.json(
       { error: "Winning outcome ID required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -44,7 +44,10 @@ export async function POST(
     return NextResponse.json({ error: "Already resolved" }, { status: 409 });
   }
   if (market.status === "CANCELLED") {
-    return NextResponse.json({ error: "Market was cancelled" }, { status: 409 });
+    return NextResponse.json(
+      { error: "Market was cancelled" },
+      { status: 409 },
+    );
   }
 
   const winningOutcome = market.outcomes.find((o) => o.id === winningOutcomeId);
@@ -52,7 +55,9 @@ export async function POST(
     return NextResponse.json({ error: "Invalid outcome" }, { status: 400 });
   }
 
-  const settings = await prisma.settings.findUnique({ where: { id: "global" } });
+  const settings = await prisma.settings.findUnique({
+    where: { id: "global" },
+  });
   const rakePercent = settings?.rakePercent ?? 0.05;
 
   // Compute payouts
@@ -128,17 +133,18 @@ export async function POST(
   const totalRake = roundCents(payouts.reduce((sum, p) => sum + p.rake, 0));
   const baseUrl = getBaseUrl();
 
+  const winnerCount = payouts.filter(
+    (p) => p.isWinner && p.netPayout > 0,
+  ).length;
   postToGroupMe(
     formatResolution(
       market.question,
       winningOutcome.label,
-      payouts
-        .filter((p) => p.isWinner)
-        .map((p) => ({ userName: p.userName, netPayout: p.netPayout })),
+      winnerCount,
       totalPot,
       totalRake,
-      baseUrl
-    )
+      baseUrl,
+    ),
   );
 
   return NextResponse.json({

@@ -41,7 +41,7 @@ export default async function Home() {
   });
 
   const openMarkets = marketCards.filter(
-    (m) => m.status === "OPEN" || m.status === "CLOSED"
+    (m) => m.status === "OPEN" || m.status === "CLOSED",
   );
   const resolvedMarkets = marketCards.filter((m) => m.status === "RESOLVED");
 
@@ -51,7 +51,7 @@ export default async function Home() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
           <h1 className="font-display text-2xl font-bold tracking-tight">
-            THE BOOK
+            PREDICTIONS
           </h1>
           <Link
             href="/admin"

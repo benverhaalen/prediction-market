@@ -90,9 +90,9 @@ export function shouldNotifyOddsShift(
 
 /**
  * Format a bet confirmation notification for the public group.
+ * Anonymous — no names shown publicly.
  */
 export function formatBetConfirmed(
-  userName: string,
   amount: number,
   outcomeLabel: string,
   marketQuestion: string,
@@ -105,7 +105,7 @@ export function formatBetConfirmed(
     .join(" | ");
 
   return [
-    `${userName} just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
+    `Someone just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
     `"${marketQuestion}"`,
     "",
     `New odds: ${oddsStr}`,
@@ -172,27 +172,19 @@ export function formatOddsShift(
 export function formatResolution(
   question: string,
   winnerLabel: string,
-  payouts: { userName: string; netPayout: number }[],
+  winnerCount: number,
   totalPot: number,
   totalRake: number,
   url: string,
 ): string {
-  const winners = payouts
-    .filter((p) => p.netPayout > 0)
-    .sort((a, b) => b.netPayout - a.netPayout)
-    .map((p) => `  ${p.userName} -- $${p.netPayout.toFixed(2)}`);
-
   return [
     `RESOLVED: "${question}"`,
     "",
     `Result: ${winnerLabel}`,
     "",
-    "Payouts:",
-    ...winners,
+    `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Total pot: $${totalPot.toFixed(2)}`,
     "",
-    `Total pot: $${totalPot.toFixed(2)} | House rake: $${totalRake.toFixed(2)}`,
-    "",
-    `Next up -> ${url}`,
+    `See results -> ${url}`,
   ].join("\n");
 }
 

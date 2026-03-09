@@ -98,7 +98,7 @@ export default async function MarketPage({
             ← Back
           </Link>
           <h1 className="font-display text-lg font-bold tracking-tight">
-            THE BOOK
+            PREDICTIONS
           </h1>
         </div>
       </header>

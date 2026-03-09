@@ -149,7 +149,6 @@ export async function POST(
   const baseUrl = getBaseUrl();
   postToGroupMe(
     formatBetConfirmed(
-      result.userName,
       result.dollarAmount,
       result.outcomeLabel,
       result.market.question,
