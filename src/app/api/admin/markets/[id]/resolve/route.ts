@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/auth";
-import { computePayouts, roundCents } from "@/lib/lmsr";
+import { computePayouts } from "@/lib/lmsr";
 import { toNumber, getBaseUrl } from "@/lib/utils";
 import { postToGroupMe, formatResolution } from "@/lib/groupme";
 import { Prisma } from "@/generated/prisma";
@@ -55,12 +55,7 @@ export async function POST(
     return NextResponse.json({ error: "Invalid outcome" }, { status: 400 });
   }
 
-  const settings = await prisma.settings.findUnique({
-    where: { id: "global" },
-  });
-  const rakePercent = settings?.rakePercent ?? 0.05;
-
-  // Compute payouts
+  // Compute payouts (parimutuel: winners split the pool)
   const betsForPayout = market.bets.map((b) => ({
     id: b.id,
     userId: b.userId,
@@ -71,7 +66,7 @@ export async function POST(
     cost: toNumber(b.cost),
   }));
 
-  const payouts = computePayouts(betsForPayout, winningOutcomeId, rakePercent);
+  const payouts = computePayouts(betsForPayout, winningOutcomeId);
 
   // Execute in transaction
   await prisma.$transaction(async (tx) => {
@@ -91,34 +86,10 @@ export async function POST(
         where: { id: payout.betId },
         data: {
           grossPayout: new Prisma.Decimal(payout.grossPayout.toFixed(4)),
-          rakePaid: new Prisma.Decimal(payout.rake.toFixed(4)),
+          rakePaid: new Prisma.Decimal("0"),
           netPayout: new Prisma.Decimal(payout.netPayout.toFixed(4)),
         },
       });
-
-      // Ledger entries for winners
-      if (payout.isWinner && payout.netPayout > 0) {
-        await tx.houseLedger.create({
-          data: {
-            marketId: id,
-            betId: payout.betId,
-            type: "PAYOUT",
-            amount: new Prisma.Decimal((-payout.netPayout).toFixed(4)),
-            description: `Payout to ${payout.userName}`,
-          },
-        });
-      }
-      if (payout.rake > 0) {
-        await tx.houseLedger.create({
-          data: {
-            marketId: id,
-            betId: payout.betId,
-            type: "RAKE",
-            amount: new Prisma.Decimal(payout.rake.toFixed(4)),
-            description: `Rake from ${payout.userName}`,
-          },
-        });
-      }
     }
 
     // Auto-reject pending bet requests
@@ -129,8 +100,7 @@ export async function POST(
   });
 
   // GroupMe notification
-  const totalPot = payouts.reduce((sum, p) => sum + p.cost, 0);
-  const totalRake = roundCents(payouts.reduce((sum, p) => sum + p.rake, 0));
+  const totalPool = payouts.reduce((sum, p) => sum + p.cost, 0);
   const baseUrl = getBaseUrl();
 
   const winnerCount = payouts.filter(
@@ -141,16 +111,14 @@ export async function POST(
       market.question,
       winningOutcome.label,
       winnerCount,
-      totalPot,
-      totalRake,
-      baseUrl,
+      totalPool,
+      `${baseUrl}/market/${id}`,
     ),
   );
 
   return NextResponse.json({
     success: true,
     payouts,
-    totalPot,
-    totalRake,
+    totalPool,
   });
 }

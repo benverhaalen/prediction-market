@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const market = await prisma.market.findUnique({
@@ -55,10 +55,13 @@ export async function GET(
     if (outcomeId && amount > 0) {
       const outcomeIndex = market.outcomes.findIndex((o) => o.id === outcomeId);
       if (outcomeIndex !== -1) {
+        const existingOutcomeShares = market.outcomes[outcomeIndex].shares;
         const preview = previewTrade(
           { shares, b: market.bParam },
           outcomeIndex,
-          amount
+          amount,
+          totalVolume,
+          existingOutcomeShares,
         );
         result.preview = preview;
       }

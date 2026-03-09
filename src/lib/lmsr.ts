@@ -24,9 +24,8 @@ export interface TradePreview {
   cost: number;
   currentPrice: number;
   newPrice: number;
-  potentialPayout: number; // shares × $1.00
-  effectivePrice: number; // cost / shares
-  multiplier: number; // 1 / effectivePrice
+  estimatedPayout: number; // pool-based estimated payout
+  multiplier: number; // estimatedPayout / cost
 }
 
 export interface PayoutResult {
@@ -90,7 +89,7 @@ export function getPrices(state: MarketState): number[] {
 function analyticalCost(
   state: MarketState,
   outcomeIndex: number,
-  delta: number
+  delta: number,
 ): number {
   const prices = getPrices(state);
   const pi = prices[outcomeIndex];
@@ -107,7 +106,7 @@ function analyticalCost(
 export function computeTrade(
   state: MarketState,
   outcomeIndex: number,
-  dollarAmount: number
+  dollarAmount: number,
 ): TradeResult {
   if (dollarAmount <= 0) {
     throw new Error("Dollar amount must be positive");
@@ -158,29 +157,37 @@ export function computeTrade(
 
 /**
  * Preview a trade without executing.
+ * Pool-based: estimated payout = (yourShares / totalWinningShares) × (pool + betAmount)
  */
 export function previewTrade(
   state: MarketState,
   outcomeIndex: number,
-  dollarAmount: number
+  dollarAmount: number,
+  pool: number,
+  existingOutcomeShares: number,
 ): TradePreview {
   const result = computeTrade(state, outcomeIndex, dollarAmount);
   const currentPrice = getPrices(state)[outcomeIndex];
-  const effectivePrice = dollarAmount / result.shares;
+  const estimatedPool = pool + dollarAmount;
+  const totalWinningShares = existingOutcomeShares + result.shares;
+  const estimatedPayout =
+    totalWinningShares > 0
+      ? (result.shares / totalWinningShares) * estimatedPool
+      : 0;
 
   return {
     shares: result.shares,
     cost: dollarAmount,
     currentPrice,
     newPrice: result.newPrices[outcomeIndex],
-    potentialPayout: result.shares, // each share pays $1
-    effectivePrice,
-    multiplier: 1 / effectivePrice,
+    estimatedPayout: roundCents(estimatedPayout),
+    multiplier: estimatedPayout / dollarAmount,
   };
 }
 
 /**
  * Compute payouts for all bets in a resolved market.
+ * Parimutuel: winners split the entire pool proportional to their shares.
  */
 export function computePayouts(
   bets: Array<{
@@ -193,14 +200,18 @@ export function computePayouts(
     cost: number;
   }>,
   winningOutcomeId: string,
-  rakePercent: number
 ): PayoutResult[] {
-  return bets.map((bet) => {
+  const pool = bets.reduce((sum, b) => sum + b.cost, 0);
+  const totalWinningShares = bets
+    .filter((b) => b.outcomeId === winningOutcomeId)
+    .reduce((sum, b) => sum + b.shares, 0);
+
+  const results = bets.map((bet) => {
     const isWinner = bet.outcomeId === winningOutcomeId;
-    const grossPayout = isWinner ? bet.shares : 0;
-    const netProfit = grossPayout - bet.cost;
-    const rake = netProfit > 0 ? netProfit * rakePercent : 0;
-    const netPayout = grossPayout - rake;
+    const payout =
+      isWinner && totalWinningShares > 0
+        ? (bet.shares / totalWinningShares) * pool
+        : 0;
 
     return {
       betId: bet.id,
@@ -209,13 +220,31 @@ export function computePayouts(
       outcomeLabel: bet.outcomeLabel,
       shares: bet.shares,
       cost: bet.cost,
-      grossPayout: roundCents(grossPayout),
-      netProfit: roundCents(netProfit),
-      rake: roundCents(rake),
-      netPayout: roundCents(netPayout),
+      grossPayout: roundCents(payout),
+      netProfit: roundCents(payout - bet.cost),
+      rake: 0,
+      netPayout: roundCents(payout),
       isWinner,
     };
   });
+
+  // Fix rounding: ensure total payouts equal pool exactly
+  const totalPaid = results
+    .filter((r) => r.isWinner)
+    .reduce((sum, r) => sum + r.netPayout, 0);
+  const remainder = roundCents(pool - totalPaid);
+  if (remainder !== 0) {
+    const largest = results
+      .filter((r) => r.isWinner)
+      .sort((a, b) => b.netPayout - a.netPayout)[0];
+    if (largest) {
+      largest.grossPayout = roundCents(largest.grossPayout + remainder);
+      largest.netPayout = roundCents(largest.netPayout + remainder);
+      largest.netProfit = roundCents(largest.netPayout - largest.cost);
+    }
+  }
+
+  return results;
 }
 
 /**
@@ -223,11 +252,4 @@ export function computePayouts(
  */
 export function roundCents(amount: number): number {
   return Math.round(amount * 100) / 100;
-}
-
-/**
- * Maximum house loss for a market: b × ln(n)
- */
-export function maxHouseLoss(b: number, numOutcomes: number): number {
-  return roundCents(b * Math.log(numOutcomes));
 }

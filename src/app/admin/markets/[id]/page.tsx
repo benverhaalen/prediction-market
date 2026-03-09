@@ -5,7 +5,6 @@ import { getPrices } from "@/lib/lmsr";
 import { toNumber, formatDollars, relativeTime } from "@/lib/utils";
 import { ProbabilityBar } from "@/components/ProbabilityBar";
 import { PayoutTable } from "@/components/PayoutTable";
-import { roundCents } from "@/lib/lmsr";
 import Link from "next/link";
 import { AdminMarketActions } from "./actions";
 
@@ -56,26 +55,16 @@ export default async function AdminMarketPage({
       venmoUsername: b.betRequest?.venmoUsername ?? "",
       shares: b.shares,
       grossPayout: toNumber(b.grossPayout ?? 0),
-      rake: toNumber(b.rakePaid ?? 0),
       netPayout: toNumber(b.netPayout ?? 0),
       isWinner: b.outcomeId === market.resolution,
     }));
-    const totalPayouts = roundCents(
-      payouts
-        .filter((p) => p.isWinner)
-        .reduce((sum, p) => sum + p.netPayout, 0),
-    );
-    const totalRake = roundCents(payouts.reduce((sum, p) => sum + p.rake, 0));
-    const housePnL = roundCents(totalVolume - totalPayouts);
     const winnerOutcome = market.outcomes.find(
       (o) => o.id === market.resolution,
     );
 
     payoutData = {
       payouts,
-      totalPayouts,
-      totalRake,
-      housePnL,
+      totalPool: totalVolume,
       winnerLabel: winnerOutcome?.label ?? "N/A",
     };
   }
@@ -117,7 +106,7 @@ export default async function AdminMarketPage({
             <p className="text-sm text-muted">{market.description}</p>
           )}
           <div className="mt-2 flex gap-4 text-xs text-muted">
-            <span>{formatDollars(totalVolume)} volume</span>
+            <span>{formatDollars(totalVolume)} pool</span>
             <span>{market._count.bets} bets</span>
             <span>b={market.bParam}</span>
           </div>

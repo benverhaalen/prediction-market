@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const confirmMatch = rawText.match(/^y\s+(.+)$/i);
   if (confirmMatch) {
     const betRequestId = confirmMatch[1].trim();
-    await handleConfirm(betRequestId, settings);
+    await handleConfirm(betRequestId);
     return NextResponse.json({ ok: true });
   }
 
@@ -66,10 +66,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-async function handleConfirm(
-  betRequestId: string,
-  settings: { rakePercent?: number } | null,
-) {
+async function handleConfirm(betRequestId: string) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const betRequest = await tx.betRequest.findUnique({
@@ -157,16 +154,6 @@ async function handleConfirm(
         },
       });
 
-      await tx.houseLedger.create({
-        data: {
-          marketId: betRequest.marketId,
-          betId: bet.id,
-          type: "TRADE_REVENUE",
-          amount: new Prisma.Decimal(dollarAmount.toFixed(4)),
-          description: `${betRequest.userName} bet $${dollarAmount} on ${betRequest.outcome.label}`,
-        },
-      });
-
       for (let i = 0; i < outcomes.length; i++) {
         await tx.priceSnapshot.create({
           data: {
@@ -197,6 +184,7 @@ async function handleConfirm(
     const baseUrl = getBaseUrl();
     await postToGroupMe(
       formatBetConfirmed(
+        result.userName,
         result.dollarAmount,
         result.outcomeLabel,
         result.market.question,

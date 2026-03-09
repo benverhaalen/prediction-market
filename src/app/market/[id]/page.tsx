@@ -4,6 +4,7 @@ import { toNumber, formatDollars, shortCode, relativeTime } from "@/lib/utils";
 import { OddsDisplay } from "@/components/OddsDisplay";
 import { PriceChart } from "@/components/PriceChart";
 import { BetRequestForm } from "@/components/BetRequestForm";
+import { PayoutPreview } from "@/components/PayoutPreview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -20,7 +21,12 @@ export default async function MarketPage({
     where: { id },
     include: {
       outcomes: true,
-      bets: { select: { cost: true } },
+      bets: {
+        include: {
+          user: true,
+          outcome: true,
+        },
+      },
       _count: { select: { bets: true } },
     },
   });
@@ -126,7 +132,7 @@ export default async function MarketPage({
             <p className="text-sm text-muted">{market.description}</p>
           )}
           <div className="mt-2 flex gap-4 text-xs text-muted">
-            <span>{formatDollars(totalVolume)} volume</span>
+            <span>{formatDollars(totalVolume)} pool</span>
             <span>{market._count.bets} bets</span>
             <span>
               {market.status === "RESOLVED"
@@ -172,6 +178,24 @@ export default async function MarketPage({
             }))}
           />
         </div>
+
+        {/* Payout preview */}
+        {market.bets.length > 0 && (
+          <PayoutPreview
+            bets={market.bets.map((b) => ({
+              userName: b.user.name,
+              outcomeLabel: b.outcome.label,
+              outcomeId: b.outcomeId,
+              shares: b.shares,
+              cost: toNumber(b.cost),
+            }))}
+            outcomes={market.outcomes.map((o) => ({
+              id: o.id,
+              label: o.label,
+            }))}
+            totalPool={totalVolume}
+          />
+        )}
 
         {/* Bet form */}
         {isOpen && (

@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ marketId: string }> }
+  { params }: { params: Promise<{ marketId: string }> },
 ) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,21 +41,11 @@ export async function GET(
     shares: b.shares,
     cost: toNumber(b.cost),
     grossPayout: toNumber(b.grossPayout ?? 0),
-    rake: toNumber(b.rakePaid ?? 0),
     netPayout: toNumber(b.netPayout ?? 0),
     isWinner: b.outcomeId === market.resolution,
   }));
 
-  const totalPayouts = roundCents(
-    payouts.filter((p) => p.isWinner).reduce((sum, p) => sum + p.netPayout, 0)
-  );
-  const totalRake = roundCents(
-    payouts.reduce((sum, p) => sum + p.rake, 0)
-  );
-  const totalCollected = roundCents(
-    payouts.reduce((sum, p) => sum + p.cost, 0)
-  );
-  const housePnL = roundCents(totalCollected - totalPayouts);
+  const totalPool = roundCents(payouts.reduce((sum, p) => sum + p.cost, 0));
 
   return NextResponse.json({
     market: {
@@ -64,9 +54,6 @@ export async function GET(
       winnerLabel: winnerOutcome?.label ?? null,
     },
     payouts,
-    totalPayouts,
-    totalRake,
-    totalCollected,
-    housePnL,
+    totalPool,
   });
 }

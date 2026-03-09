@@ -2,16 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { formatDollars } from "@/lib/utils";
 
 interface SettingsData {
   defaultBParam: number;
-  rakePercent: number;
   groupmeBotId: string | null;
   adminGroupmeBotId: string | null;
   adminGroupmeGroupId: string | null;
   venmoHandle: string;
-  houseBankroll: number;
   maxBetAmount: number;
 }
 
@@ -35,7 +32,6 @@ export default function SettingsPage() {
         if (data) {
           setSettings({
             ...data,
-            houseBankroll: Number(data.houseBankroll),
             maxBetAmount: Number(data.maxBetAmount),
           });
         }
@@ -54,7 +50,6 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           defaultBParam: settings.defaultBParam,
-          rakePercent: settings.rakePercent,
           groupmeBotId: settings.groupmeBotId,
           adminGroupmeBotId: settings.adminGroupmeBotId,
           adminGroupmeGroupId: settings.adminGroupmeGroupId,
@@ -89,7 +84,10 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
-          <Link href="/admin" className="text-muted hover:text-foreground text-sm">
+          <Link
+            href="/admin"
+            className="text-muted hover:text-foreground text-sm"
+          >
             ← Back
           </Link>
           <h1 className="font-display text-lg font-bold">Settings</h1>
@@ -97,14 +95,6 @@ export default function SettingsPage() {
       </header>
 
       <main className="mx-auto max-w-lg px-4 py-4 space-y-4">
-        {/* House bankroll */}
-        <div className="rounded-xl border border-border bg-surface p-4 text-center">
-          <div className="text-xs text-muted">House Bankroll</div>
-          <div className="font-display text-3xl font-bold text-green">
-            {formatDollars(settings.houseBankroll)}
-          </div>
-        </div>
-
         {/* Settings form */}
         <div className="space-y-4">
           <div>
@@ -116,7 +106,10 @@ export default function SettingsPage() {
               min="1"
               value={settings.maxBetAmount}
               onChange={(e) =>
-                setSettings({ ...settings, maxBetAmount: Number(e.target.value) })
+                setSettings({
+                  ...settings,
+                  maxBetAmount: Number(e.target.value),
+                })
               }
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
@@ -133,7 +126,10 @@ export default function SettingsPage() {
               type="number"
               value={settings.defaultBParam}
               onChange={(e) =>
-                setSettings({ ...settings, defaultBParam: Number(e.target.value) })
+                setSettings({
+                  ...settings,
+                  defaultBParam: Number(e.target.value),
+                })
               }
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
@@ -141,24 +137,8 @@ export default function SettingsPage() {
 
           <div>
             <label className="text-xs text-muted block mb-1.5">
-              Rake Percentage
+              Venmo Handle
             </label>
-            <input
-              type="number"
-              step="0.01"
-              value={settings.rakePercent}
-              onChange={(e) =>
-                setSettings({ ...settings, rakePercent: Number(e.target.value) })
-              }
-              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
-            />
-            <p className="text-xs text-muted mt-1">
-              {(settings.rakePercent * 100).toFixed(0)}% of net winnings
-            </p>
-          </div>
-
-          <div>
-            <label className="text-xs text-muted block mb-1.5">Venmo Handle</label>
             <input
               type="text"
               value={settings.venmoHandle}
@@ -171,7 +151,9 @@ export default function SettingsPage() {
           </div>
 
           <div className="rounded-xl border border-border bg-surface-2 p-4">
-            <h3 className="font-display text-sm font-semibold mb-3">GroupMe Integration</h3>
+            <h3 className="font-display text-sm font-semibold mb-3">
+              GroupMe Integration
+            </h3>
 
             <div className="mb-3">
               <label className="text-xs text-muted block mb-1.5">
@@ -226,7 +208,8 @@ export default function SettingsPage() {
                 className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
               />
               <p className="text-xs text-muted mt-1">
-                Set callback URL to: https://prediction-market-five-nu.vercel.app/api/groupme/admin
+                Set callback URL to:
+                https://prediction-market-five-nu.vercel.app/api/groupme/admin
               </p>
             </div>
           </div>

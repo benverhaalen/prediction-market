@@ -8,24 +8,19 @@ interface PayoutEntry {
   venmoUsername: string;
   shares: number;
   grossPayout: number;
-  rake: number;
   netPayout: number;
   isWinner: boolean;
 }
 
 interface PayoutTableProps {
   payouts: PayoutEntry[];
-  totalPayouts: number;
-  totalRake: number;
-  housePnL: number;
+  totalPool: number;
   winnerLabel: string;
 }
 
 export function PayoutTable({
   payouts,
-  totalPayouts,
-  totalRake,
-  housePnL,
+  totalPool,
   winnerLabel,
 }: PayoutTableProps) {
   const winners = payouts.filter((p) => p.isWinner && p.netPayout > 0);
@@ -74,8 +69,18 @@ export function PayoutTable({
                 }`}
               >
                 {paid[i] && (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </button>
@@ -83,7 +88,9 @@ export function PayoutTable({
               {/* Payout info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className={`font-semibold ${paid[i] ? "line-through text-muted" : ""}`}>
+                  <span
+                    className={`font-semibold ${paid[i] ? "line-through text-muted" : ""}`}
+                  >
                     {w.userName}
                   </span>
                   <span className="font-display text-lg font-bold text-green shrink-0">
@@ -98,20 +105,37 @@ export function PayoutTable({
               {/* Copy button */}
               <button
                 onClick={() =>
-                  copyToClipboard(
-                    w.venmoUsername || w.userName,
-                    `venmo-${i}`
-                  )
+                  copyToClipboard(w.venmoUsername || w.userName, `venmo-${i}`)
                 }
                 className="min-h-[36px] min-w-[36px] shrink-0 rounded-md bg-surface-3 border border-border flex items-center justify-center cursor-pointer hover:bg-surface transition-colors"
               >
                 {copied === `venmo-${i}` ? (
-                  <svg className="h-4 w-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg
+                    className="h-4 w-4 text-green"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 ) : (
-                  <svg className="h-4 w-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  <svg
+                    className="h-4 w-4 text-muted"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
                   </svg>
                 )}
               </button>
@@ -120,7 +144,6 @@ export function PayoutTable({
             <div className="mt-1.5 flex gap-3 text-xs text-muted pl-9">
               <span>{w.shares.toFixed(1)} shares</span>
               <span>Gross {formatDollars(w.grossPayout)}</span>
-              <span>Rake -{formatDollars(w.rake)}</span>
             </div>
           </div>
         ))}
@@ -128,9 +151,11 @@ export function PayoutTable({
 
       {/* Progress indicator */}
       {winners.length > 0 && (
-        <div className={`rounded-lg p-2 text-center text-sm font-medium ${
-          allPaid ? "bg-green-dim/20 text-green" : "bg-surface-2 text-muted"
-        }`}>
+        <div
+          className={`rounded-lg p-2 text-center text-sm font-medium ${
+            allPaid ? "bg-green-dim/20 text-green" : "bg-surface-2 text-muted"
+          }`}
+        >
           {allPaid
             ? "All payouts sent!"
             : `${Object.values(paid).filter(Boolean).length} / ${winners.length} paid`}
@@ -138,24 +163,11 @@ export function PayoutTable({
       )}
 
       {/* Summary */}
-      <div className="mt-4 flex flex-wrap gap-4 text-sm">
-        <div>
-          Total Payouts:{" "}
-          <span className="font-semibold">{formatDollars(totalPayouts)}</span>
-        </div>
-        <div>
-          Total Rake:{" "}
-          <span className="font-semibold text-gold">{formatDollars(totalRake)}</span>
-        </div>
-        <div>
-          House P&L:{" "}
-          <span
-            className={`font-semibold ${housePnL >= 0 ? "text-green" : "text-red"}`}
-          >
-            {housePnL >= 0 ? "+" : ""}
-            {formatDollars(housePnL)}
-          </span>
-        </div>
+      <div className="mt-4 text-sm text-muted">
+        Total Pool:{" "}
+        <span className="font-semibold text-foreground">
+          {formatDollars(totalPool)}
+        </span>
       </div>
     </div>
   );

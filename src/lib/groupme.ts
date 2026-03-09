@@ -90,9 +90,9 @@ export function shouldNotifyOddsShift(
 
 /**
  * Format a bet confirmation notification for the public group.
- * Anonymous — no names shown publicly.
  */
 export function formatBetConfirmed(
+  userName: string,
   amount: number,
   outcomeLabel: string,
   marketQuestion: string,
@@ -105,7 +105,7 @@ export function formatBetConfirmed(
     .join(" | ");
 
   return [
-    `💰 Someone just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
+    `💰 ${userName} just put $${amount.toFixed(2)} on "${outcomeLabel}"`,
     `"${marketQuestion}"`,
     "",
     `New odds: ${oddsStr}`,
@@ -173,8 +173,7 @@ export function formatResolution(
   question: string,
   winnerLabel: string,
   winnerCount: number,
-  totalPot: number,
-  totalRake: number,
+  totalPool: number,
   url: string,
 ): string {
   return [
@@ -182,7 +181,7 @@ export function formatResolution(
     "",
     `Result: ${winnerLabel}`,
     "",
-    `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Total pot: $${totalPot.toFixed(2)} 💸`,
+    `${winnerCount} winner${winnerCount !== 1 ? "s" : ""} | Pool: $${totalPool.toFixed(2)} 💸`,
     "",
     `See results 👉 ${url}`,
   ].join("\n");

@@ -209,8 +209,8 @@ export default function NewMarket() {
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
             />
             <p className="text-xs text-muted mt-1">
-              Max house loss: ${(bParam * Math.log(n)).toFixed(2)} | Default is
-              20
+              Controls how much odds move per bet. Higher = more stable odds.
+              Default is 20
             </p>
           </div>
 

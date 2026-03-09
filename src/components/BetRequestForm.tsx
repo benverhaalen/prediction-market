@@ -19,7 +19,7 @@ interface BetRequestFormProps {
 
 interface PreviewData {
   shares: number;
-  potentialPayout: number;
+  estimatedPayout: number;
   multiplier: number;
   currentPrice: number;
   newPrice: number;
@@ -34,10 +34,14 @@ export function BetRequestForm({
 }: BetRequestFormProps) {
   const [name, setName] = useState("");
   const [venmoUsername, setVenmoUsername] = useState("");
-  const [selectedOutcome, setSelectedOutcome] = useState<string>(outcomes[0]?.id ?? "");
+  const [selectedOutcome, setSelectedOutcome] = useState<string>(
+    outcomes[0]?.id ?? "",
+  );
   const [amount, setAmount] = useState<string>("");
   const [preview, setPreview] = useState<PreviewData | null>(null);
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -60,7 +64,7 @@ export function BetRequestForm({
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/markets/${marketId}?preview=true&outcomeId=${selectedOutcome}&amount=${numAmount}`
+          `/api/markets/${marketId}?preview=true&outcomeId=${selectedOutcome}&amount=${numAmount}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -77,7 +81,14 @@ export function BetRequestForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
-    if (!name.trim() || !venmoUsername.trim() || !selectedOutcome || !numAmount || numAmount < 1) return;
+    if (
+      !name.trim() ||
+      !venmoUsername.trim() ||
+      !selectedOutcome ||
+      !numAmount ||
+      numAmount < 1
+    )
+      return;
 
     setStatus("loading");
     setErrorMsg("");
@@ -106,7 +117,12 @@ export function BetRequestForm({
       setStatus("success");
 
       const pending = JSON.parse(localStorage.getItem("pending_bets") || "[]");
-      pending.push({ marketId, outcomeId: selectedOutcome, amount: numAmount, time: Date.now() });
+      pending.push({
+        marketId,
+        outcomeId: selectedOutcome,
+        amount: numAmount,
+        time: Date.now(),
+      });
       localStorage.setItem("pending_bets", JSON.stringify(pending));
     } catch (err) {
       setStatus("error");
@@ -114,7 +130,8 @@ export function BetRequestForm({
     }
   };
 
-  const selectedLabel = outcomes.find((o) => o.id === selectedOutcome)?.label ?? "";
+  const selectedLabel =
+    outcomes.find((o) => o.id === selectedOutcome)?.label ?? "";
 
   // Venmo note: keep it generic to avoid TOS issues — no gambling terms
   const venmoNote = `${marketShortCode} - ${name.trim() || "payment"}`;
@@ -137,8 +154,8 @@ export function BetRequestForm({
         </h3>
         <p className="mt-3 text-sm text-foreground/80">
           Send {formatDollars(parseFloat(amount))} to{" "}
-          <span className="font-semibold text-gold">{venmoHandle}</span> on Venmo
-          with this note:
+          <span className="font-semibold text-gold">{venmoHandle}</span> on
+          Venmo with this note:
         </p>
         <div className="mt-2 flex items-center gap-2">
           <div className="flex-1 rounded-lg bg-surface-2 p-3 text-center font-mono text-sm">
@@ -150,12 +167,32 @@ export function BetRequestForm({
             className="min-h-[44px] min-w-[44px] shrink-0 rounded-lg bg-surface-2 border border-border flex items-center justify-center cursor-pointer hover:bg-surface-3 transition-colors"
           >
             {copied ? (
-              <svg className="h-5 w-5 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-5 w-5 text-green"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="h-5 w-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <svg
+                className="h-5 w-5 text-muted"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
             )}
           </button>
@@ -178,7 +215,10 @@ export function BetRequestForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-surface p-5">
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-xl border border-border bg-surface p-5"
+    >
       <h3 className="font-display text-xl font-semibold mb-4">Place a Bet</h3>
 
       {/* Name */}
@@ -196,7 +236,9 @@ export function BetRequestForm({
 
       {/* Venmo Username */}
       <div className="mb-4">
-        <label className="text-xs text-muted block mb-1.5">Venmo Username</label>
+        <label className="text-xs text-muted block mb-1.5">
+          Venmo Username
+        </label>
         <input
           type="text"
           value={venmoUsername}
@@ -225,8 +267,18 @@ export function BetRequestForm({
             ))}
           </select>
           <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-            <svg className="h-4 w-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="h-4 w-4 text-muted"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>
@@ -238,7 +290,9 @@ export function BetRequestForm({
           Bet Amount ($1 – ${maxBetAmount})
         </label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-base">$</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-base">
+            $
+          </span>
           <input
             type="number"
             min="1"
@@ -258,26 +312,28 @@ export function BetRequestForm({
       {preview && (
         <div className="mb-4 rounded-xl border border-green/20 bg-green-dim/10 p-4">
           <div className="text-center">
-            <div className="text-xs text-muted mb-1">If {selectedLabel} wins, you get</div>
-            <div className="font-display text-3xl font-bold text-green">
-              {formatDollars(preview.potentialPayout * 0.95)}
+            <div className="text-xs text-muted mb-1">
+              Estimated payout if {selectedLabel} wins
             </div>
-            <div className="text-xs text-muted mt-1">after 5% rake</div>
+            <div className="font-display text-3xl font-bold text-green">
+              {formatDollars(preview.estimatedPayout)}
+            </div>
+            <div className="text-xs text-muted/60 mt-1">
+              May change as more bets are placed
+            </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+          <div className="mt-3 grid grid-cols-2 gap-2 text-center text-sm">
             <div>
               <div className="text-muted text-xs">Profit</div>
               <div className="font-semibold text-green">
-                +{formatDollars(preview.potentialPayout * 0.95 - parseFloat(amount))}
+                +{formatDollars(preview.estimatedPayout - parseFloat(amount))}
               </div>
             </div>
             <div>
               <div className="text-muted text-xs">Multiplier</div>
-              <div className="font-semibold text-gold">{preview.multiplier.toFixed(1)}x</div>
-            </div>
-            <div>
-              <div className="text-muted text-xs">Shares</div>
-              <div className="font-semibold">{preview.shares.toFixed(2)}</div>
+              <div className="font-semibold text-gold">
+                {preview.multiplier.toFixed(1)}x
+              </div>
             </div>
           </div>
         </div>
@@ -291,7 +347,13 @@ export function BetRequestForm({
 
       <button
         type="submit"
-        disabled={status === "loading" || !name.trim() || !venmoUsername.trim() || !amount || parseFloat(amount) < 1}
+        disabled={
+          status === "loading" ||
+          !name.trim() ||
+          !venmoUsername.trim() ||
+          !amount ||
+          parseFloat(amount) < 1
+        }
         className="w-full min-h-[52px] rounded-lg bg-gold font-display text-xl font-semibold text-black transition-colors hover:bg-gold/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
       >
         {status === "loading" ? "Submitting..." : "Place Bet Request"}

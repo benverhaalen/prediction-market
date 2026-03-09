@@ -112,18 +112,7 @@ export async function POST(
       },
     });
 
-    // 9. Record house ledger entry
-    await tx.houseLedger.create({
-      data: {
-        marketId: betRequest.marketId,
-        betId: bet.id,
-        type: "TRADE_REVENUE",
-        amount: new Prisma.Decimal(dollarAmount.toFixed(4)),
-        description: `${betRequest.userName} bet $${dollarAmount} on ${betRequest.outcome.label}`,
-      },
-    });
-
-    // 10. Store price snapshots
+    // 9. Store price snapshots
     for (let i = 0; i < outcomes.length; i++) {
       await tx.priceSnapshot.create({
         data: {
@@ -149,6 +138,7 @@ export async function POST(
   const baseUrl = getBaseUrl();
   await postToGroupMe(
     formatBetConfirmed(
+      result.userName,
       result.dollarAmount,
       result.outcomeLabel,
       result.market.question,
