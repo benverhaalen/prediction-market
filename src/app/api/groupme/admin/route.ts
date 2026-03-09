@@ -207,7 +207,7 @@ async function handleConfirm(
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    await postToAdminGroupMe(`Error confirming bet: ${msg}`);
+    await postToAdminGroupMe(`⚠️ ${msg}`);
   }
 }
 
@@ -218,14 +218,12 @@ async function handleReject(betRequestId: string) {
     });
 
     if (!betRequest) {
-      await postToAdminGroupMe(`Bet request not found: ${betRequestId}`);
+      await postToAdminGroupMe(`⚠️ Bet request not found`);
       return;
     }
 
     if (betRequest.status !== "PENDING") {
-      await postToAdminGroupMe(
-        `Bet request already ${betRequest.status.toLowerCase()}`,
-      );
+      await postToAdminGroupMe(`⚠️ Already ${betRequest.status.toLowerCase()}`);
       return;
     }
 
@@ -239,7 +237,7 @@ async function handleReject(betRequestId: string) {
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    await postToAdminGroupMe(`Error rejecting bet: ${msg}`);
+    await postToAdminGroupMe(`⚠️ ${msg}`);
   }
 }
 
