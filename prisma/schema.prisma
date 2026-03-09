@@ -23,7 +23,7 @@ model Market {
   description        String?
   status             MarketStatus @default(OPEN)
   resolution         String?
-  bParam             Float        @default(100)
+  bParam             Float        @default(20)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   closesAt           DateTime
@@ -122,7 +122,7 @@ model HouseLedger {
 
 model Settings {
   id                 String  @id @default("global")
-  defaultBParam      Float   @default(100)
+  defaultBParam      Float   @default(20)
   rakePercent        Float   @default(0.05)
   groupmeBotId       String?
   groupmeToken       String?

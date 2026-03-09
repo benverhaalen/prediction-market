@@ -5,6 +5,7 @@ import { formatDollars } from "@/lib/utils";
 
 interface PayoutEntry {
   userName: string;
+  venmoUsername: string;
   shares: number;
   grossPayout: number;
   rake: number;
@@ -27,12 +28,13 @@ export function PayoutTable({
   housePnL,
   winnerLabel,
 }: PayoutTableProps) {
+  const winners = payouts.filter((p) => p.isWinner && p.netPayout > 0);
+  const [paid, setPaid] = useState<Record<number, boolean>>({});
   const [copied, setCopied] = useState<string | null>(null);
 
-  const winners = payouts.filter((p) => p.isWinner && p.netPayout > 0);
-  const venmoInstructions = winners
-    .map((w) => `Send ${formatDollars(w.netPayout)} to ${w.userName}`)
-    .join("\n");
+  const togglePaid = (index: number) => {
+    setPaid((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
 
   const copyToClipboard = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
@@ -40,67 +42,100 @@ export function PayoutTable({
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const allPaid = winners.length > 0 && winners.every((_, i) => paid[i]);
+
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4">
         <h3 className="font-display text-lg font-semibold">
           Payouts — Result: <span className="text-green">{winnerLabel}</span>
         </h3>
-        <button
-          onClick={() => copyToClipboard(venmoInstructions, "all")}
-          className="min-h-[44px] rounded-lg bg-gold px-3 text-sm font-semibold text-black cursor-pointer hover:bg-gold/90 transition-colors"
-        >
-          {copied === "all" ? "Copied!" : "Copy All Venmo"}
-        </button>
       </div>
 
-      {/* Winners table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted border-b border-border">
-              <th className="pb-2 pr-4">Winner</th>
-              <th className="pb-2 pr-4 text-right">Shares</th>
-              <th className="pb-2 pr-4 text-right">Gross</th>
-              <th className="pb-2 pr-4 text-right">Rake</th>
-              <th className="pb-2 pr-4 text-right">Net Payout</th>
-              <th className="pb-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {winners.map((w, i) => (
-              <tr key={i} className="border-b border-border/50">
-                <td className="py-2 pr-4 font-medium">{w.userName}</td>
-                <td className="py-2 pr-4 text-right text-muted">
-                  {w.shares.toFixed(2)}
-                </td>
-                <td className="py-2 pr-4 text-right">
-                  {formatDollars(w.grossPayout)}
-                </td>
-                <td className="py-2 pr-4 text-right text-red">
-                  -{formatDollars(w.rake)}
-                </td>
-                <td className="py-2 pr-4 text-right font-semibold text-green">
-                  {formatDollars(w.netPayout)}
-                </td>
-                <td className="py-2">
-                  <button
-                    onClick={() =>
-                      copyToClipboard(
-                        `Send ${formatDollars(w.netPayout)} to ${w.userName}`,
-                        `row-${i}`
-                      )
-                    }
-                    className="text-xs text-blue cursor-pointer hover:underline"
-                  >
-                    {copied === `row-${i}` ? "Copied" : "Copy"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Venmo payout cards */}
+      <div className="space-y-3 mb-4">
+        {winners.map((w, i) => (
+          <div
+            key={i}
+            className={`rounded-lg border p-3 transition-colors ${
+              paid[i]
+                ? "border-green/30 bg-green-dim/10"
+                : "border-border bg-surface-2"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {/* Checkbox */}
+              <button
+                onClick={() => togglePaid(i)}
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded border cursor-pointer transition-colors ${
+                  paid[i]
+                    ? "border-green bg-green text-black"
+                    : "border-muted bg-surface-3"
+                }`}
+              >
+                {paid[i] && (
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Payout info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className={`font-semibold ${paid[i] ? "line-through text-muted" : ""}`}>
+                    {w.userName}
+                  </span>
+                  <span className="font-display text-lg font-bold text-green shrink-0">
+                    {formatDollars(w.netPayout)}
+                  </span>
+                </div>
+                <div className="text-sm text-gold">
+                  {w.venmoUsername || "No Venmo provided"}
+                </div>
+              </div>
+
+              {/* Copy button */}
+              <button
+                onClick={() =>
+                  copyToClipboard(
+                    w.venmoUsername || w.userName,
+                    `venmo-${i}`
+                  )
+                }
+                className="min-h-[36px] min-w-[36px] shrink-0 rounded-md bg-surface-3 border border-border flex items-center justify-center cursor-pointer hover:bg-surface transition-colors"
+              >
+                {copied === `venmo-${i}` ? (
+                  <svg className="h-4 w-4 text-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+
+            <div className="mt-1.5 flex gap-3 text-xs text-muted pl-9">
+              <span>{w.shares.toFixed(1)} shares</span>
+              <span>Gross {formatDollars(w.grossPayout)}</span>
+              <span>Rake -{formatDollars(w.rake)}</span>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* Progress indicator */}
+      {winners.length > 0 && (
+        <div className={`rounded-lg p-2 text-center text-sm font-medium ${
+          allPaid ? "bg-green-dim/20 text-green" : "bg-surface-2 text-muted"
+        }`}>
+          {allPaid
+            ? "All payouts sent!"
+            : `${Object.values(paid).filter(Boolean).length} / ${winners.length} paid`}
+        </div>
+      )}
 
       {/* Summary */}
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
@@ -121,16 +156,6 @@ export function PayoutTable({
             {formatDollars(housePnL)}
           </span>
         </div>
-      </div>
-
-      {/* Venmo instructions */}
-      <div className="mt-4 rounded-lg bg-surface-2 p-3">
-        <h4 className="text-xs font-semibold text-muted mb-2">Venmo Instructions</h4>
-        {winners.map((w, i) => (
-          <div key={i} className="text-sm py-1">
-            → Send {formatDollars(w.netPayout)} to {w.userName}
-          </div>
-        ))}
       </div>
     </div>
   );

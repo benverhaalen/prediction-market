@@ -27,7 +27,11 @@ export default async function AdminMarketPage({
     include: {
       outcomes: true,
       bets: {
-        include: { user: true, outcome: true },
+        include: {
+          user: true,
+          outcome: true,
+          betRequest: { select: { venmoUsername: true } },
+        },
         orderBy: { createdAt: "desc" },
       },
       _count: { select: { bets: true } },
@@ -49,6 +53,7 @@ export default async function AdminMarketPage({
   if (isResolved || isCancelled) {
     const payouts = market.bets.map((b) => ({
       userName: b.user.name,
+      venmoUsername: b.betRequest?.venmoUsername ?? "",
       shares: b.shares,
       grossPayout: toNumber(b.grossPayout ?? 0),
       rake: toNumber(b.rakePaid ?? 0),
@@ -56,11 +61,15 @@ export default async function AdminMarketPage({
       isWinner: b.outcomeId === market.resolution,
     }));
     const totalPayouts = roundCents(
-      payouts.filter((p) => p.isWinner).reduce((sum, p) => sum + p.netPayout, 0)
+      payouts
+        .filter((p) => p.isWinner)
+        .reduce((sum, p) => sum + p.netPayout, 0),
     );
     const totalRake = roundCents(payouts.reduce((sum, p) => sum + p.rake, 0));
     const housePnL = roundCents(totalVolume - totalPayouts);
-    const winnerOutcome = market.outcomes.find((o) => o.id === market.resolution);
+    const winnerOutcome = market.outcomes.find(
+      (o) => o.id === market.resolution,
+    );
 
     payoutData = {
       payouts,
@@ -75,7 +84,10 @@ export default async function AdminMarketPage({
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
-          <Link href="/admin" className="text-muted hover:text-foreground text-sm">
+          <Link
+            href="/admin"
+            className="text-muted hover:text-foreground text-sm"
+          >
             ← Back
           </Link>
           <h1 className="font-display text-lg font-bold">Manage Market</h1>

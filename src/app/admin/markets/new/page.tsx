@@ -11,7 +11,7 @@ export default function NewMarket() {
   const [marketType, setMarketType] = useState<"binary" | "multi">("binary");
   const [outcomes, setOutcomes] = useState<string[]>(["Yes", "No"]);
   const [closesAt, setClosesAt] = useState("");
-  const [bParam, setBParam] = useState(100);
+  const [bParam, setBParam] = useState(20);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -80,7 +80,10 @@ export default function NewMarket() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center gap-3 px-4 py-3">
-          <Link href="/admin" className="text-muted hover:text-foreground text-sm">
+          <Link
+            href="/admin"
+            className="text-muted hover:text-foreground text-sm"
+          >
             ← Back
           </Link>
           <h1 className="font-display text-lg font-bold">New Market</h1>
@@ -206,8 +209,8 @@ export default function NewMarket() {
               className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
             />
             <p className="text-xs text-muted mt-1">
-              Max house loss: ${(bParam * Math.log(n)).toFixed(2)} | Leave at 100
-              unless you know what you&apos;re doing
+              Max house loss: ${(bParam * Math.log(n)).toFixed(2)} | Default is
+              20
             </p>
           </div>
 
@@ -216,7 +219,9 @@ export default function NewMarket() {
             <div className="text-xs text-muted mb-1">Preview</div>
             <div className="text-muted">
               All outcomes start at{" "}
-              <span className="text-foreground font-medium">{initialProb}%</span>
+              <span className="text-foreground font-medium">
+                {initialProb}%
+              </span>
             </div>
           </div>
 
