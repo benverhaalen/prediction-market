@@ -76,21 +76,22 @@ model Bet {
 }
 
 model BetRequest {
-  id          String        @id @default(cuid())
-  userName    String
-  marketId    String
-  market      Market        @relation(fields: [marketId], references: [id])
-  outcomeId   String
-  outcome     Outcome       @relation(fields: [outcomeId], references: [id])
-  amount      Decimal       @db.Decimal(19, 4)
-  status      RequestStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  confirmedAt DateTime?
-  userId      String?
-  user        User?         @relation(fields: [userId], references: [id])
-  betId       String?       @unique
-  bet         Bet?          @relation(fields: [betId], references: [id])
+  id            String        @id @default(cuid())
+  userName      String
+  venmoUsername  String        @default("")
+  marketId      String
+  market        Market        @relation(fields: [marketId], references: [id])
+  outcomeId     String
+  outcome       Outcome       @relation(fields: [outcomeId], references: [id])
+  amount        Decimal       @db.Decimal(19, 4)
+  status        RequestStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  confirmedAt   DateTime?
+  userId        String?
+  user          User?         @relation(fields: [userId], references: [id])
+  betId         String?       @unique
+  bet           Bet?          @relation(fields: [betId], references: [id])
 
   @@index([status])
   @@index([marketId])
@@ -120,14 +121,17 @@ model HouseLedger {
 }
 
 model Settings {
-  id            String  @id @default("global")
-  defaultBParam Float   @default(100)
-  rakePercent   Float   @default(0.05)
-  groupmeBotId  String?
-  groupmeToken  String?
-  adminPassword String  @default("changeme")
-  houseBankroll Decimal @default(200) @db.Decimal(19, 4)
-  venmoHandle   String  @default("@admin")
+  id                 String  @id @default("global")
+  defaultBParam      Float   @default(100)
+  rakePercent        Float   @default(0.05)
+  groupmeBotId       String?
+  groupmeToken       String?
+  adminGroupmeBotId  String?
+  adminGroupmeGroupId String?
+  adminPassword      String  @default("changeme")
+  houseBankroll      Decimal @default(100) @db.Decimal(19, 4)
+  maxBetAmount       Decimal @default(100) @db.Decimal(19, 4)
+  venmoHandle        String  @default("@admin")
 }
 
 enum MarketStatus {

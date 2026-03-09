@@ -15,20 +15,55 @@ export async function postToGroupMe(text: string): Promise<void> {
       return;
     }
 
-    const response = await fetch("https://api.groupme.com/v3/bots/post", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        bot_id: settings.groupmeBotId,
-        text,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("[GroupMe] POST failed:", response.status, await response.text());
-    }
+    await postWithBotId(settings.groupmeBotId, text);
   } catch (error) {
     console.error("[GroupMe] Error posting message:", error);
+  }
+}
+
+/**
+ * Post a message to the admin GroupMe group.
+ * Used for bet request notifications that only the admin should see.
+ */
+export async function postToAdminGroupMe(text: string): Promise<void> {
+  try {
+    const settings = await prisma.settings.findUnique({
+      where: { id: "global" },
+    });
+
+    if (!settings?.adminGroupmeBotId) {
+      console.log(
+        "[GroupMe Admin] No admin bot ID configured, skipping:",
+        text,
+      );
+      return;
+    }
+
+    await postWithBotId(settings.adminGroupmeBotId, text);
+  } catch (error) {
+    console.error("[GroupMe Admin] Error posting message:", error);
+  }
+}
+
+/**
+ * Post a message using a specific bot ID.
+ */
+async function postWithBotId(botId: string, text: string): Promise<void> {
+  const response = await fetch("https://api.groupme.com/v3/bots/post", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bot_id: botId,
+      text,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error(
+      "[GroupMe] POST failed:",
+      response.status,
+      await response.text(),
+    );
   }
 }
 
@@ -39,7 +74,7 @@ export async function postToGroupMe(text: string): Promise<void> {
 export function shouldNotifyOddsShift(
   currentPrices: number[],
   lastNotifiedPrices: Record<string, number> | null,
-  outcomeIds: string[]
+  outcomeIds: string[],
 ): boolean {
   if (!lastNotifiedPrices) return false;
 
@@ -60,10 +95,10 @@ export function formatNewMarket(
   question: string,
   outcomes: { label: string }[],
   closesAt: Date,
-  url: string
+  url: string,
 ): string {
   const n = outcomes.length;
-  const initProb = Math.round((100 / n));
+  const initProb = Math.round(100 / n);
   const outcomeStr = outcomes
     .map((o) => `${o.label} (${initProb}%)`)
     .join(" | ");
@@ -92,7 +127,7 @@ export function formatOddsShift(
   outcomes: { id: string; label: string }[],
   currentPrices: number[],
   previousPrices: Record<string, number>,
-  url: string
+  url: string,
 ): string {
   const lines = outcomes.map((o, i) => {
     const prev = Math.round((previousPrices[o.id] ?? 0) * 100);
@@ -102,13 +137,7 @@ export function formatOddsShift(
     return `${o.label}: ${prev}% -> ${curr}% (${sign}${delta})`;
   });
 
-  return [
-    `ODDS SHIFT: "${question}"`,
-    "",
-    ...lines,
-    "",
-    url,
-  ].join("\n");
+  return [`ODDS SHIFT: "${question}"`, "", ...lines, "", url].join("\n");
 }
 
 /**
@@ -120,7 +149,7 @@ export function formatResolution(
   payouts: { userName: string; netPayout: number }[],
   totalPot: number,
   totalRake: number,
-  url: string
+  url: string,
 ): string {
   const winners = payouts
     .filter((p) => p.netPayout > 0)
@@ -146,4 +175,28 @@ export function formatResolution(
  */
 export function formatCancellation(question: string): string {
   return `CANCELLED: "${question}" -- All bets are refunded.`;
+}
+
+/**
+ * Format an admin notification for a new bet request.
+ */
+export function formatBetRequestAdmin(
+  betRequestId: string,
+  userName: string,
+  venmoUsername: string,
+  amount: number,
+  outcomeLabel: string,
+  marketQuestion: string,
+  url: string,
+): string {
+  return [
+    `NEW BET REQUEST`,
+    `${userName} (${venmoUsername}) wants $${amount.toFixed(2)} on "${outcomeLabel}"`,
+    `Market: ${marketQuestion}`,
+    "",
+    `Reply "confirm ${betRequestId}" after Venmo received`,
+    `Reply "reject ${betRequestId}" to decline`,
+    "",
+    url,
+  ].join("\n");
 }

@@ -27,7 +27,9 @@ export default async function MarketPage({
 
   if (!market) notFound();
 
-  const settings = await prisma.settings.findUnique({ where: { id: "global" } });
+  const settings = await prisma.settings.findUnique({
+    where: { id: "global" },
+  });
 
   const shares = market.outcomes.map((o) => o.shares);
   const prices = getPrices({ shares, b: market.bParam });
@@ -50,10 +52,12 @@ export default async function MarketPage({
     timeMap.get(key)![snap.outcomeId] = snap.price;
   }
 
-  const chartData = Array.from(timeMap.entries()).map(([timestamp, pricesMap]) => ({
-    timestamp,
-    prices: pricesMap,
-  }));
+  const chartData = Array.from(timeMap.entries()).map(
+    ([timestamp, pricesMap]) => ({
+      timestamp,
+      prices: pricesMap,
+    }),
+  );
 
   // Add initial point
   const initialPrices: Record<string, number> = {};
@@ -180,6 +184,9 @@ export default async function MarketPage({
             }))}
             venmoHandle={settings?.venmoHandle ?? "@admin"}
             marketShortCode={shortCode(market.id)}
+            maxBetAmount={
+              settings?.maxBetAmount ? toNumber(settings.maxBetAmount) : 100
+            }
           />
         )}
       </main>

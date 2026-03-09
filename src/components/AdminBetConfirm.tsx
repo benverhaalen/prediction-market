@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 interface BetRequestItem {
   id: string;
   userName: string;
+  venmoUsername: string;
   marketQuestion: string;
   outcomeLabel: string;
   amount: number;
@@ -55,21 +56,25 @@ export function AdminBetConfirm({ request }: { request: BetRequestItem }) {
           {relativeTime(new Date(request.createdAt))}
         </span>
       </div>
-      <div className="text-xs text-muted mb-3 line-clamp-1">
+      <div className="text-xs text-muted mb-1 line-clamp-1">
         {request.marketQuestion}
+      </div>
+      <div className="text-xs mb-3">
+        <span className="text-muted">Venmo: </span>
+        <span className="text-gold font-medium">{request.venmoUsername || "Not provided"}</span>
       </div>
       <div className="flex gap-2">
         <button
           onClick={() => handleAction("confirm")}
           disabled={status !== "idle"}
-          className="flex-1 min-h-[48px] rounded-lg bg-green font-display text-lg font-semibold text-black transition-colors hover:bg-green/90 disabled:opacity-40 cursor-pointer"
+          className="flex-1 min-h-[52px] rounded-lg bg-green font-display text-lg font-semibold text-black transition-colors hover:bg-green/90 disabled:opacity-40 cursor-pointer"
         >
           {status === "confirming" ? "Confirming..." : "CONFIRM"}
         </button>
         <button
           onClick={() => handleAction("reject")}
           disabled={status !== "idle"}
-          className="min-h-[48px] rounded-lg bg-surface-3 border border-border px-4 text-sm text-muted transition-colors hover:bg-surface-2 disabled:opacity-40 cursor-pointer"
+          className="min-h-[52px] rounded-lg bg-surface-3 border border-border px-5 text-sm text-muted transition-colors hover:bg-surface-2 hover:text-red disabled:opacity-40 cursor-pointer"
         >
           {status === "rejecting" ? "..." : "Reject"}
         </button>

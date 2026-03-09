@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getPrices } from "@/lib/lmsr";
 import { toNumber, formatDollars } from "@/lib/utils";
 import { AdminBetConfirm } from "@/components/AdminBetConfirm";
+import { AdminAutoRefresh } from "@/components/AdminAutoRefresh";
+import { AdminDeleteMarket } from "@/components/AdminDeleteMarket";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -45,10 +47,19 @@ export default async function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <AdminAutoRefresh pendingCount={pendingRequests.length} />
+
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-3">
-          <h1 className="font-display text-2xl font-bold">ADMIN</h1>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl font-bold">ADMIN</h1>
+            {pendingRequests.length > 0 && (
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red text-xs font-bold text-white">
+                {pendingRequests.length}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
             <Link
               href="/admin/markets/new"
               className="min-h-[44px] flex items-center rounded-lg bg-gold px-3 text-sm font-semibold text-black cursor-pointer hover:bg-gold/90 transition-colors"
@@ -83,6 +94,7 @@ export default async function AdminDashboard() {
                   request={{
                     id: req.id,
                     userName: req.userName,
+                    venmoUsername: req.venmoUsername,
                     marketQuestion: req.market.question,
                     outcomeLabel: req.outcome.label,
                     amount: toNumber(req.amount),
@@ -104,27 +116,37 @@ export default async function AdminDashboard() {
               const shares = m.outcomes.map((o) => o.shares);
               const prices = getPrices({ shares, b: m.bParam });
               const vol = m.bets.reduce((sum, b) => sum + toNumber(b.cost), 0);
+              const hasBets = m._count.bets > 0;
 
               return (
-                <Link
+                <div
                   key={m.id}
-                  href={`/admin/markets/${m.id}`}
-                  className="block rounded-xl border border-border bg-surface p-3 cursor-pointer hover:bg-surface-2 transition-colors"
+                  className="rounded-xl border border-border bg-surface p-3 transition-colors"
                 >
-                  <div className="font-medium text-sm mb-1 line-clamp-1">
-                    {m.question}
-                  </div>
-                  <div className="flex gap-3 text-xs text-muted">
-                    {m.outcomes.map((o, i) => (
-                      <span key={o.id}>
-                        {o.label}: {Math.round(prices[i] * 100)}%
+                  <Link
+                    href={`/admin/markets/${m.id}`}
+                    className="block cursor-pointer hover:opacity-80"
+                  >
+                    <div className="font-medium text-sm mb-1 line-clamp-1">
+                      {m.question}
+                    </div>
+                    <div className="flex gap-3 text-xs text-muted">
+                      {m.outcomes.map((o, i) => (
+                        <span key={o.id}>
+                          {o.label}: {Math.round(prices[i] * 100)}%
+                        </span>
+                      ))}
+                      <span className="ml-auto">
+                        {formatDollars(vol)} | {m._count.bets} bets
                       </span>
-                    ))}
-                    <span className="ml-auto">
-                      {formatDollars(vol)} | {m._count.bets} bets
-                    </span>
-                  </div>
-                </Link>
+                    </div>
+                  </Link>
+                  {!hasBets && (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <AdminDeleteMarket marketId={m.id} question={m.question} />
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

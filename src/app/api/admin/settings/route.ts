@@ -19,8 +19,11 @@ export async function GET() {
     defaultBParam: settings.defaultBParam,
     rakePercent: settings.rakePercent,
     groupmeBotId: settings.groupmeBotId,
+    adminGroupmeBotId: settings.adminGroupmeBotId,
+    adminGroupmeGroupId: settings.adminGroupmeGroupId,
     venmoHandle: settings.venmoHandle,
     houseBankroll: settings.houseBankroll,
+    maxBetAmount: settings.maxBetAmount,
   });
 }
 
@@ -36,7 +39,10 @@ export async function PATCH(request: NextRequest) {
   if (body.rakePercent !== undefined) updateData.rakePercent = body.rakePercent;
   if (body.groupmeBotId !== undefined) updateData.groupmeBotId = body.groupmeBotId;
   if (body.groupmeToken !== undefined) updateData.groupmeToken = body.groupmeToken;
+  if (body.adminGroupmeBotId !== undefined) updateData.adminGroupmeBotId = body.adminGroupmeBotId;
+  if (body.adminGroupmeGroupId !== undefined) updateData.adminGroupmeGroupId = body.adminGroupmeGroupId;
   if (body.venmoHandle !== undefined) updateData.venmoHandle = body.venmoHandle;
+  if (body.maxBetAmount !== undefined) updateData.maxBetAmount = body.maxBetAmount;
   if (body.newPassword) {
     updateData.adminPassword = await hashPassword(body.newPassword);
   }
@@ -50,7 +56,10 @@ export async function PATCH(request: NextRequest) {
     defaultBParam: settings.defaultBParam,
     rakePercent: settings.rakePercent,
     groupmeBotId: settings.groupmeBotId,
+    adminGroupmeBotId: settings.adminGroupmeBotId,
+    adminGroupmeGroupId: settings.adminGroupmeGroupId,
     venmoHandle: settings.venmoHandle,
     houseBankroll: settings.houseBankroll,
+    maxBetAmount: settings.maxBetAmount,
   });
 }

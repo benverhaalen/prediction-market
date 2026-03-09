@@ -8,8 +8,11 @@ interface SettingsData {
   defaultBParam: number;
   rakePercent: number;
   groupmeBotId: string | null;
+  adminGroupmeBotId: string | null;
+  adminGroupmeGroupId: string | null;
   venmoHandle: string;
   houseBankroll: number;
+  maxBetAmount: number;
 }
 
 export default function SettingsPage() {
@@ -33,6 +36,7 @@ export default function SettingsPage() {
           setSettings({
             ...data,
             houseBankroll: Number(data.houseBankroll),
+            maxBetAmount: Number(data.maxBetAmount),
           });
         }
         setLoading(false);
@@ -52,7 +56,10 @@ export default function SettingsPage() {
           defaultBParam: settings.defaultBParam,
           rakePercent: settings.rakePercent,
           groupmeBotId: settings.groupmeBotId,
+          adminGroupmeBotId: settings.adminGroupmeBotId,
+          adminGroupmeGroupId: settings.adminGroupmeGroupId,
           venmoHandle: settings.venmoHandle,
+          maxBetAmount: settings.maxBetAmount,
           ...(newPassword ? { newPassword } : {}),
         }),
       });
@@ -99,9 +106,27 @@ export default function SettingsPage() {
         </div>
 
         {/* Settings form */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="text-xs text-muted block mb-1">
+            <label className="text-xs text-muted block mb-1.5">
+              Max Bet Amount ($)
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={settings.maxBetAmount}
+              onChange={(e) =>
+                setSettings({ ...settings, maxBetAmount: Number(e.target.value) })
+              }
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
+            />
+            <p className="text-xs text-muted mt-1">
+              Maximum anyone can bet on a single wager
+            </p>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted block mb-1.5">
               Default Liquidity Parameter (b)
             </label>
             <input
@@ -110,12 +135,12 @@ export default function SettingsPage() {
               onChange={(e) =>
                 setSettings({ ...settings, defaultBParam: Number(e.target.value) })
               }
-              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs text-muted block mb-1">
+            <label className="text-xs text-muted block mb-1.5">
               Rake Percentage
             </label>
             <input
@@ -125,7 +150,7 @@ export default function SettingsPage() {
               onChange={(e) =>
                 setSettings({ ...settings, rakePercent: Number(e.target.value) })
               }
-              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
             <p className="text-xs text-muted mt-1">
               {(settings.rakePercent * 100).toFixed(0)}% of net winnings
@@ -133,7 +158,7 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <label className="text-xs text-muted block mb-1">Venmo Handle</label>
+            <label className="text-xs text-muted block mb-1.5">Venmo Handle</label>
             <input
               type="text"
               value={settings.venmoHandle}
@@ -141,30 +166,73 @@ export default function SettingsPage() {
                 setSettings({ ...settings, venmoHandle: e.target.value })
               }
               placeholder="@your-venmo"
-              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
           </div>
 
-          <div>
-            <label className="text-xs text-muted block mb-1">
-              GroupMe Bot ID
-            </label>
-            <input
-              type="text"
-              value={settings.groupmeBotId ?? ""}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  groupmeBotId: e.target.value || null,
-                })
-              }
-              placeholder="Paste bot ID from dev.groupme.com"
-              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
-            />
+          <div className="rounded-xl border border-border bg-surface-2 p-4">
+            <h3 className="font-display text-sm font-semibold mb-3">GroupMe Integration</h3>
+
+            <div className="mb-3">
+              <label className="text-xs text-muted block mb-1.5">
+                Public Bot ID (notifications to friend group)
+              </label>
+              <input
+                type="text"
+                value={settings.groupmeBotId ?? ""}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    groupmeBotId: e.target.value || null,
+                  })
+                }
+                placeholder="Paste bot ID from dev.groupme.com"
+                className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="text-xs text-muted block mb-1.5">
+                Admin Bot ID (private notifications to you)
+              </label>
+              <input
+                type="text"
+                value={settings.adminGroupmeBotId ?? ""}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    adminGroupmeBotId: e.target.value || null,
+                  })
+                }
+                placeholder="Bot ID for your private admin group"
+                className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-muted block mb-1.5">
+                Admin Group ID (for verifying callback messages)
+              </label>
+              <input
+                type="text"
+                value={settings.adminGroupmeGroupId ?? ""}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    adminGroupmeGroupId: e.target.value || null,
+                  })
+                }
+                placeholder="GroupMe group ID"
+                className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
+              />
+              <p className="text-xs text-muted mt-1">
+                Set callback URL to: https://prediction-market-five-nu.vercel.app/api/groupme/admin
+              </p>
+            </div>
           </div>
 
           <div>
-            <label className="text-xs text-muted block mb-1">
+            <label className="text-xs text-muted block mb-1.5">
               New Admin Password (leave blank to keep current)
             </label>
             <input
@@ -172,14 +240,14 @@ export default function SettingsPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password"
-              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-sm focus:border-gold focus:outline-none"
+              className="w-full rounded-lg bg-surface border border-border px-3 py-3 text-base focus:border-gold focus:outline-none"
             />
           </div>
         </div>
 
         {message && (
           <div
-            className={`rounded-lg p-2 text-sm ${
+            className={`rounded-lg p-3 text-sm ${
               message.includes("Error")
                 ? "bg-red-dim/30 text-red"
                 : "bg-green-dim/30 text-green"
@@ -192,7 +260,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full min-h-[48px] rounded-lg bg-gold font-display text-lg font-semibold text-black hover:bg-gold/90 disabled:opacity-40 cursor-pointer"
+          className="w-full min-h-[52px] rounded-lg bg-gold font-display text-xl font-semibold text-black hover:bg-gold/90 disabled:opacity-40 cursor-pointer"
         >
           {saving ? "Saving..." : "Save Settings"}
         </button>
