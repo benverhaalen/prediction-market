@@ -6,6 +6,9 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  CartesianGrid,
+  Legend,
+  ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
 
@@ -39,17 +42,31 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
     );
   }
 
-  const chartData = data.map((point) => {
+  // Sort ascending by time
+  const sorted = [...data].sort(
+    (a, b) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  );
+
+  // Forward-fill missing outcome prices so staggered snapshot timestamps
+  // don't create vertical spikes between 0 and the real value
+  const lastKnown: Record<string, number> = {};
+  const chartData = sorted.map((point) => {
     const entry: Record<string, string | number> = {
       time: new Date(point.timestamp).getTime(),
     };
     for (const outcome of outcomes) {
-      entry[outcome.label] = Math.round((point.prices[outcome.id] ?? 0) * 100);
+      const raw = point.prices[outcome.id];
+      if (raw !== undefined) {
+        lastKnown[outcome.id] = raw;
+      }
+      entry[outcome.label] = Math.round((lastKnown[outcome.id] ?? 0) * 100);
     }
     return entry;
   });
 
-  const showDots = data.length <= 5;
+  const showDots = chartData.length <= 10;
+  const isBinary = outcomes.length === 2;
 
   const formatTime = (ts: number) =>
     new Date(ts).toLocaleString("en-US", {
@@ -60,9 +77,17 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
     });
 
   return (
-    <div className="h-48 w-full">
+    <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#2A2A2A"
+            vertical={false}
+          />
           <XAxis
             dataKey="time"
             type="number"
@@ -71,6 +96,7 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
             tick={{ fontSize: 10, fill: "#888" }}
             tickLine={false}
             axisLine={{ stroke: "#2A2A2A" }}
+            minTickGap={60}
           />
           <YAxis
             tick={{ fontSize: 10, fill: "#888" }}
@@ -78,6 +104,7 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
             axisLine={{ stroke: "#2A2A2A" }}
             domain={[0, 100]}
             tickFormatter={(v) => `${v}%`}
+            width={36}
           />
           <Tooltip
             contentStyle={{
@@ -88,15 +115,33 @@ export function PriceChart({ data, outcomes }: PriceChartProps) {
             }}
             labelFormatter={(ts) => formatTime(ts as number)}
             formatter={(value, name) => [`${value}%`, name]}
+            cursor={{ stroke: "#444", strokeWidth: 1 }}
           />
+          <Legend
+            wrapperStyle={{
+              fontSize: "12px",
+              color: "#888",
+              paddingTop: "4px",
+            }}
+          />
+          {isBinary && (
+            <ReferenceLine
+              y={50}
+              stroke="#444"
+              strokeDasharray="4 4"
+              strokeWidth={1}
+            />
+          )}
           {outcomes.map((outcome, i) => (
             <Line
               key={outcome.id}
-              type="stepAfter"
+              type="monotone"
               dataKey={outcome.label}
               stroke={CHART_COLORS[i % CHART_COLORS.length]}
               strokeWidth={2}
-              dot={showDots ? { r: 4 } : false}
+              dot={showDots ? { r: 3, strokeWidth: 0 } : false}
+              activeDot={{ r: 5 }}
+              isAnimationActive={false}
             />
           ))}
         </LineChart>
